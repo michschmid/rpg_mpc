@@ -77,7 +77,11 @@ MpcWrapper<T>::MpcWrapper()
   // Initialize online data.
   Eigen::Matrix<T, 3, 1> p_B_C(0, 0, 0);
   Eigen::Quaternion<T> q_B_C(1, 0, 0, 0);
-  Eigen::Matrix<T, 3, 1> point_of_interest(0, 0, -1000);
+  // IMPORTANT: The initial point of interest can blow up everything depending on the orientation of the camera
+  // It should ideally lead to a (0, 0) projection in the beginning.
+  // Also remember it is set in world coordinates.
+  // Eigen::Matrix<T, 3, 1> point_of_interest(0, 0, -1000);
+  Eigen::Matrix<T, 3, 1> point_of_interest(-1000, 0, 0);
 
   setCameraParameters(p_B_C, q_B_C);
   setPointOfInterest(point_of_interest);
@@ -330,6 +334,14 @@ void MpcWrapper<T>::getStates(
   return_states = acado_states_.cast<T>();
 }
 
+// Get a specific reference state.
+template <typename T>
+void MpcWrapper<T>::getReferenceState(const int node_index,
+    Eigen::Ref<Eigen::Matrix<T, kRefSize, 1>> return_reference_state)
+{
+  return_reference_state = acado_reference_states_.col(node_index).cast<T>();
+}
+
 // Get a specific input.
 template <typename T>
 void MpcWrapper<T>::getInput(const int node_index,
@@ -346,6 +358,13 @@ void MpcWrapper<T>::getInputs(
   return_inputs = acado_inputs_.cast<T>();
 }
 
+// Get online data.
+template <typename T>
+void MpcWrapper<T>::getOnlineData(
+    Eigen::Ref<Eigen::Matrix<T, kOdSize, 1>> return_od)
+{
+  return_od = acado_online_data_.col(0).cast<T>();
+}
 
 template class MpcWrapper<float>;
 template class MpcWrapper<double>;

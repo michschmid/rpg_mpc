@@ -139,9 +139,11 @@ private:
   bool solve_from_scratch_;
   Eigen::Matrix<T, kStateSize, 1> est_state_;
   Eigen::Matrix<T, kStateSize, kSamples + 1> reference_states_;
+  Eigen::Matrix<T, kRefSize, 1> reference_state_check_;
   Eigen::Matrix<T, kInputSize, kSamples + 1> reference_inputs_;
   Eigen::Matrix<T, kStateSize, kSamples + 1> predicted_states_;
   Eigen::Matrix<T, kInputSize, kSamples> predicted_inputs_;
+  Eigen::Matrix<T, kOdSize, 1> online_data_check_;
   Eigen::Matrix<T, 3, 1> point_of_interest_;
 };
 

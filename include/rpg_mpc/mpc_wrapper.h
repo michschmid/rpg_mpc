@@ -84,10 +84,14 @@ class MpcWrapper
     Eigen::Ref<Eigen::Matrix<T, kStateSize, 1>> return_state);
   void getStates(
     Eigen::Ref<Eigen::Matrix<T, kStateSize, kSamples+1>> return_states);
+  void getReferenceState(const int node_index,
+    Eigen::Ref<Eigen::Matrix<T, kRefSize, 1>> return_reference_state);
   void getInput(const int node_index,
     Eigen::Ref<Eigen::Matrix<T, kInputSize, 1>> return_input);
   void getInputs(
     Eigen::Ref<Eigen::Matrix<T, kInputSize, kSamples>> return_input);
+  void getOnlineData(
+    Eigen::Ref<Eigen::Matrix<T, kOdSize, 1>> return_od);
   T getTimestep() { return dt_; }
 
  private:
