@@ -67,7 +67,7 @@ class MpcWrapper
     const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
     Eigen::Quaternion<T>& q_B_C);
   bool setPointOfInterest(
-    const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& position);
+    const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& position);
 
   bool setReferencePose(
     const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state);

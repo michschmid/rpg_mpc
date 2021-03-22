@@ -28,6 +28,7 @@
 
 #include <Eigen/Eigen>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/PointStamped.h>
 #include <nav_msgs/Path.h>
 #include <quadrotor_common/control_command.h>
@@ -93,7 +94,7 @@ private:
   // Internal helper functions.
 
   void pointOfInterestCallback(
-      const geometry_msgs::PointStamped::ConstPtr& msg);
+     const geometry_msgs::PoseArray::ConstPtr& msg);
 
   void offCallback(const std_msgs::Empty::ConstPtr& msg);
 
@@ -144,7 +145,7 @@ private:
   Eigen::Matrix<T, kStateSize, kSamples + 1> predicted_states_;
   Eigen::Matrix<T, kInputSize, kSamples> predicted_inputs_;
   Eigen::Matrix<T, kOdSize, 1> online_data_check_;
-  Eigen::Matrix<T, 3, 1> point_of_interest_;
+  Eigen::Matrix<T, 6, 1> point_of_interest_;
 };
 
 

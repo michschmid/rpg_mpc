@@ -80,8 +80,8 @@ MpcWrapper<T>::MpcWrapper()
   // IMPORTANT: The initial point of interest can blow up everything depending on the orientation of the camera
   // It should ideally lead to a (0, 0) projection in the beginning.
   // Also remember it is set in world coordinates.
-  // Eigen::Matrix<T, 3, 1> point_of_interest(0, 0, -1000);
-  Eigen::Matrix<T, 3, 1> point_of_interest(-1000, 0, 0);
+  Eigen::Matrix<T, 6, 1> point_of_interest;
+  point_of_interest << -1000, 0, 0, -1000, 0, 0;
 
   setCameraParameters(p_B_C, q_B_C);
   setPointOfInterest(point_of_interest);
@@ -189,12 +189,12 @@ bool MpcWrapper<T>::setCameraParameters(
   const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
   Eigen::Quaternion<T>& q_B_C)
 {
-  acado_online_data_.block(3, 0, 3, ACADO_N+1)
+  acado_online_data_.block(6, 0, 3, ACADO_N+1)
     = p_B_C.replicate(1, ACADO_N+1).template cast<float>();
 
   Eigen::Matrix<T, 4, 1> q_B_C_mat(
     q_B_C.w(), q_B_C.x(), q_B_C.y(), q_B_C.z());
-  acado_online_data_.block(6, 0, 4, ACADO_N+1)
+  acado_online_data_.block(9, 0, 4, ACADO_N+1)
     = q_B_C_mat.replicate(1, ACADO_N+1).template cast<float>();
 
   return true;
@@ -203,9 +203,9 @@ bool MpcWrapper<T>::setCameraParameters(
 // Set the point of interest. Perception cost should be non-zero.
 template <typename T>
 bool MpcWrapper<T>::setPointOfInterest(
-  const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& position)
+  const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& position)
 {
-  acado_online_data_.block(0, 0, 3, ACADO_N+1)
+  acado_online_data_.block(0, 0, 6, ACADO_N+1)
     = position.replicate(1, ACADO_N+1).template cast<float>();
   return true;
 }
