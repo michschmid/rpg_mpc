@@ -182,8 +182,10 @@ quadrotor_common::ControlCommand MpcController<T>::run(
 
   // Calculate polar representation
   float theta, radius;
-  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1)/ (v_norm2 - v_norm1)));
+  // theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
+  // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1)/ (v_norm2 - v_norm1)));
+  theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
+  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));
 
   // theta = std::atan2(-(u_norm2 - u_norm1), (v_norm2 - v_norm1));
   // if ((u_norm2 - u_norm1) == 0){
