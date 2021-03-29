@@ -184,14 +184,14 @@ real_t evGx[ 2000 ];
 /** Matrix of size: 200 x 4 (row major format) */
 real_t evGu[ 800 ];
 
-/** Column vector of size: 36 */
-real_t objAuxVar[ 36 ];
+/** Column vector of size: 213 */
+real_t objAuxVar[ 213 ];
 
 /** Row vector of size: 27 */
 real_t objValueIn[ 27 ];
 
-/** Row vector of size: 176 */
-real_t objValueOut[ 176 ];
+/** Row vector of size: 240 */
+real_t objValueOut[ 240 ];
 
 /** Matrix of size: 200 x 10 (row major format) */
 real_t Q1[ 2000 ];

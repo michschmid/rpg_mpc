@@ -55,8 +55,10 @@ MpcWrapper<T>::MpcWrapper()
   acado_reference_states_.block(0, 0, kStateSize, kSamples) =
     hover_state.replicate(1, kSamples).template cast<float>();
 
+  // acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
+  //   Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
   acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
-    Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
+    (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << -M_PI_2, 0).finished().replicate(1, kSamples);
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
@@ -80,10 +82,14 @@ MpcWrapper<T>::MpcWrapper()
   // IMPORTANT: The initial point of interest can blow up everything depending on the orientation of the camera
   // It should ideally lead to a (0, 0) projection in the beginning.
   // Also remember it is set in world coordinates.
+  // TODO: make this dependent on the initial q_BC passed in the param file, 
+  // this requires the wrapper object to be instantiated after the param loading in the mpc controller constructor 
   Eigen::Matrix<T, 6, 1> point_of_interest;
-  point_of_interest << -1000, 0, 0, -1000, 0, 0;
+  point_of_interest << 4.5, 4, 2, 4.5, -4, 2.001;
+  // point_of_interest << -1000, 0, 0, -1000, 0;
 
   setCameraParameters(p_B_C, q_B_C);
+  // TODO: ad a warning in this method if this would lead to a NaN value
   setPointOfInterest(point_of_interest);
 
   // Initialize solver.
