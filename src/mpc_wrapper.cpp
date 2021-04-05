@@ -85,7 +85,7 @@ MpcWrapper<T>::MpcWrapper()
   // TODO: make this dependent on the initial q_BC passed in the param file, 
   // this requires the wrapper object to be instantiated after the param loading in the mpc controller constructor 
   Eigen::Matrix<T, 6, 1> point_of_interest;
-  point_of_interest << 4.5, 4, 2, 4.5, -4, 2;
+  point_of_interest << 2, 0, 1, 4, 0.01, 1;
   // point_of_interest << -1000, 0, 0, -1000, 0;
 
   setCameraParameters(p_B_C, q_B_C);

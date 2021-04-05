@@ -108,11 +108,11 @@ int main( ){
   IntermediateState theta, radius;
   // TODO: acado does not allow discontinuous functions on online data (i.e. no if else statements)
   // We must therefore check outside the model that u_norm2 - u_norm1 and v_norm2 - v_norm1 is never zero
-  // theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
-  // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1)));
+  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
+  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1)));
   // TODO: need to ensure that theta does not change sign at pi/2
-  theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));
+  // theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
+  // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));
 
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.

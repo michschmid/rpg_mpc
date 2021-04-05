@@ -42,6 +42,7 @@
 
 #include "rpg_mpc/mpc_wrapper.h"
 #include "rpg_mpc/mpc_params.h"
+#include <rpg_mpc/set_perception_cost.h>
 
 namespace rpg_mpc {
 
@@ -93,6 +94,8 @@ public:
 private:
   // Internal helper functions.
 
+bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::set_perception_cost::Response& response);
+
   void pointOfInterestCallback(
      const geometry_msgs::PoseArray::ConstPtr& msg);
 
@@ -125,6 +128,7 @@ private:
   ros::Subscriber sub_point_of_interest_;
   ros::Subscriber sub_autopilot_off_;
   ros::Publisher pub_predicted_trajectory_;
+  ros::ServiceServer cost_serv_;
 
   // Parameters
   MpcParams<T> params_;

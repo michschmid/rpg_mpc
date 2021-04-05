@@ -21,11 +21,12 @@
 
 
 # Cost on states
-Q_pos_xy:     10    # Cost for horizontal positon error
-Q_pos_z:      10    # Cost for vertical position error
-Q_attitude:   50    # Cost for attitude error
-Q_velocity:   10    # Cost for velocity error
-Q_perception: 5000  # Cost for reprojection error to camera optical axis (PAMPC)
+Q_pos_xy:       10    # Cost for horizontal positon error
+Q_pos_z:        10    # Cost for vertical position error
+Q_attitude:     50    # Cost for attitude error
+Q_velocity:     10    # Cost for velocity error
+Q_perc_angle:   0     # Cost for reprojection error to camera optical axis (PAMPC)
+Q_perc_radius:  0
 
 # Cost on Inputs
 R_thrust:     1     # Cost on thrust input
@@ -46,7 +47,7 @@ max_thrust:         20.0      # ~ 200% gravity [N]
 # Extrinsics for Perception Aware MPC
 p_B_C:      [ 0.0, 0.0, 0.0 ]               # camera in body center [m]
 # p_B_C:      [ 0.4, 0.0, 0.3 ]
-q_B_C:      [ -0.5, 0.5, -0.5, 0.5 ]
+q_B_C:      [ 0.2706, -0.6533, 0.6533, -0.2706 ]
 
 # Print information such as timing to terminal
 print_info:       true

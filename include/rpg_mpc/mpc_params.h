@@ -69,19 +69,21 @@ class MpcParams {
       return false
 
     // Read state costs.
-    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perception;
+    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius;
     GET_PARAM(Q_pos_xy);
     GET_PARAM(Q_pos_z);
     GET_PARAM(Q_attitude);
     GET_PARAM(Q_velocity);
-    quadrotor_common::getParam("Q_perception", Q_perception, (T)0.0, pnh);
+    quadrotor_common::getParam("Q_perc_angle", Q_perc_angle, (T)0.0, pnh);
+    quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
 
     // Check whether all state costs are positive.
-    if(Q_pos_xy     <= 0.0 ||
-       Q_pos_z      <= 0.0 ||
-       Q_attitude   <= 0.0 ||
-       Q_velocity   <= 0.0 ||
-       Q_perception < 0.0)      // Perception cost can be zero to deactivate.
+    if(Q_pos_xy            <= 0.0 ||
+       Q_pos_z             <= 0.0 ||
+       Q_attitude          <= 0.0 ||
+       Q_velocity          <= 0.0 ||
+       Q_perc_angle   < 0.0 ||
+       Q_perc_radius  < 0.0)      // Perception cost can be zero to deactivate.
     {
       ROS_ERROR("MPC: State cost Q has negative enries!");
       return false;
@@ -107,7 +109,7 @@ class MpcParams {
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
-      Q_perception, Q_perception).finished().asDiagonal();
+      Q_perc_angle, Q_perc_radius).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
 
@@ -155,7 +157,9 @@ class MpcParams {
     quadrotor_common::getParam("print_info", print_info_, false, pnh);
     if(print_info_) ROS_INFO("MPC: Informative printing enabled.");
 
-    changed_ = true;
+    // TODO: If this is set to true here, the params instantiated in the autopilot will always overwrite the 
+    // internal ones 
+    // changed_ = true;
 
     #undef GET_PARAM
     #undef GET_PARAM_OPT

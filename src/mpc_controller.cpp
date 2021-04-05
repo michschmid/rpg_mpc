@@ -51,15 +51,28 @@ MpcController<T>::MpcController(
   sub_autopilot_off_ = nh_.subscribe("autopilot/off", 1,
                                      &MpcController<T>::offCallback, this);
 
+  cost_serv_ = nh_.advertiseService("set_perception_cost", &MpcController<T>::setPerceptionCost, this);
+
   if (!params_.loadParameters(pnh_)) {
     ROS_ERROR("[%s] Could not load parameters.", pnh_.getNamespace().c_str());
     ros::shutdown();
     return;
   }
+  params_.changed_ = true;
   setNewParams(params_);
 
   solve_from_scratch_ = true;
   preparation_thread_ = std::thread(&MpcWrapper<T>::prepare, mpc_wrapper_);
+}
+
+template<typename T>
+bool MpcController<T>::setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::set_perception_cost::Response& response)
+{
+  params_.Q_(kCostSize-2, kCostSize-2) = request.theta_cost;
+  params_.Q_(kCostSize-1, kCostSize-1) = request.radius_cost;
+  params_.changed_ = true;
+  setNewParams(params_);
+  return true;
 }
 
 template<typename T>
@@ -182,10 +195,10 @@ quadrotor_common::ControlCommand MpcController<T>::run(
 
   // Calculate polar representation
   float theta, radius;
-  // theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
-  // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1)/ (v_norm2 - v_norm1)));
-  theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));
+  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
+  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1)/ (v_norm2 - v_norm1)));
+  // theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
+  // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));
 
   // theta = std::atan2(-(u_norm2 - u_norm1), (v_norm2 - v_norm1));
   // if ((u_norm2 - u_norm1) == 0){
