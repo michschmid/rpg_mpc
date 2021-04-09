@@ -116,6 +116,10 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
       const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kSamples>> inputs,
       ros::Time& time);
 
+  bool publishReference(
+      const Eigen::Ref<const Eigen::Matrix<T, kStateSize, kSamples + 1>> reference_states,
+      ros::Time& time);
+
   void preparationThread();
 
   bool setNewParams(MpcParams<T>& params);
@@ -128,6 +132,7 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   ros::Subscriber sub_point_of_interest_;
   ros::Subscriber sub_autopilot_off_;
   ros::Publisher pub_predicted_trajectory_;
+  ros::Publisher pub_reference_trajectory_;
   ros::ServiceServer cost_serv_;
 
   // Parameters

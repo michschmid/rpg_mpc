@@ -60,7 +60,7 @@ int main( ){
 
   // Parameters with exemplary values. These are set/overwritten at runtime.
   const double t_start = 0.0;     // Initial time [s]
-  const double t_end = 2.0;       // Time horizon [s]
+  const double t_end = 4.0;       // Time horizon [s]
   const double dt = 0.1;          // Discretization time [s]
   const int N = round(t_end/dt);  // Number of nodes
   const double g_z = 9.8066;      // Gravity is everywhere [m/s^2]
@@ -70,7 +70,8 @@ int main( ){
   const double T_max = 20;        // Maximal thrust [N]
 
   // Bias to prevent division by zero.
-  const double epsilon = 0.1;     // Camera projection recover bias [m]
+  const double epsilon1 = 0.1;     // Camera projection recover bias [m]
+  const double epsilon2 = 0.001;   // Cartesian to polar conversion bias [m]
 
 
   // System Dynamics
@@ -99,17 +100,16 @@ int main( ){
   IntermediateState intSz2 = ((((-q_x)*q_B_C_x+(-q_y)*q_B_C_y+(-q_z)*q_B_C_z+q_B_C_w*q_w)*((-q_x)*q_B_C_x+(-q_y)*q_B_C_y+(-q_z)*q_B_C_z+q_B_C_w*q_w)+((-q_x)*q_B_C_z+q_B_C_w*q_y+q_B_C_x*q_z+q_B_C_y*q_w)*(-(-q_x)*q_B_C_z-q_B_C_w*q_y-q_B_C_x*q_z-q_B_C_y*q_w)+((-q_y)*q_B_C_x+q_B_C_w*q_z+q_B_C_y*q_x+q_B_C_z*q_w)*((-q_y)*q_B_C_x+q_B_C_w*q_z+q_B_C_y*q_x+q_B_C_z*q_w)+((-q_z)*q_B_C_y+q_B_C_w*q_x+q_B_C_x*q_w+q_B_C_z*q_y)*(-(-q_z)*q_B_C_y-q_B_C_w*q_x-q_B_C_x*q_w-q_B_C_z*q_y))*(p_F_z2-p_z)+(((-q_x)*q_B_C_x+(-q_y)*q_B_C_y+(-q_z)*q_B_C_z+q_B_C_w*q_w)*((-q_x)*q_B_C_z+q_B_C_w*q_y+q_B_C_x*q_z+q_B_C_y*q_w)+((-q_x)*q_B_C_x+(-q_y)*q_B_C_y+(-q_z)*q_B_C_z+q_B_C_w*q_w)*((-q_x)*q_B_C_z+q_B_C_w*q_y+q_B_C_x*q_z+q_B_C_y*q_w)+((-q_y)*q_B_C_x+q_B_C_w*q_z+q_B_C_y*q_x+q_B_C_z*q_w)*((-q_z)*q_B_C_y+q_B_C_w*q_x+q_B_C_x*q_w+q_B_C_z*q_y)+(-(-q_y)*q_B_C_x-q_B_C_w*q_z-q_B_C_y*q_x-q_B_C_z*q_w)*(-(-q_z)*q_B_C_y-q_B_C_w*q_x-q_B_C_x*q_w-q_B_C_z*q_y))*(p_F_x2-p_x)+(((-q_x)*q_B_C_x+(-q_y)*q_B_C_y+(-q_z)*q_B_C_z+q_B_C_w*q_w)*(-(-q_z)*q_B_C_y-q_B_C_w*q_x-q_B_C_x*q_w-q_B_C_z*q_y)+((-q_x)*q_B_C_x+(-q_y)*q_B_C_y+(-q_z)*q_B_C_z+q_B_C_w*q_w)*(-(-q_z)*q_B_C_y-q_B_C_w*q_x-q_B_C_x*q_w-q_B_C_z*q_y)+((-q_x)*q_B_C_z+q_B_C_w*q_y+q_B_C_x*q_z+q_B_C_y*q_w)*((-q_y)*q_B_C_x+q_B_C_w*q_z+q_B_C_y*q_x+q_B_C_z*q_w)+((-q_x)*q_B_C_z+q_B_C_w*q_y+q_B_C_x*q_z+q_B_C_y*q_w)*((-q_y)*q_B_C_x+q_B_C_w*q_z+q_B_C_y*q_x+q_B_C_z*q_w))*(p_F_y2-p_y));
 
   // normalized image coordinates
-  IntermediateState u_norm1 = intSx1/(intSz1 + epsilon);
-  IntermediateState v_norm1 = intSy1/(intSz1 + epsilon);
-  IntermediateState u_norm2 = intSx2/(intSz2 + epsilon);
-  IntermediateState v_norm2 = intSy2/(intSz2 + epsilon);
+  IntermediateState u_norm1 = intSx1/(intSz1 + epsilon1);
+  IntermediateState v_norm1 = intSy1/(intSz1 + epsilon1);
+  IntermediateState u_norm2 = intSx2/(intSz2 + epsilon1);
+  IntermediateState v_norm2 = intSy2/(intSz2 + epsilon1);
 
   // Calculate polar representation
   IntermediateState theta, radius;
-  // TODO: acado does not allow discontinuous functions on online data (i.e. no if else statements)
-  // We must therefore check outside the model that u_norm2 - u_norm1 and v_norm2 - v_norm1 is never zero
-  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1)));
+  // TODO: as edge case could still lead to a division by zero if v_norm2 - v_norm1 = - epsilon2, make sure this never happens!!
+  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
+  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
   // TODO: need to ensure that theta does not change sign at pi/2
   // theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
   // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));

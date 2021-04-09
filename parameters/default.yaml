@@ -21,9 +21,9 @@
 
 
 # Cost on states
-Q_pos_xy:       10    # Cost for horizontal positon error
-Q_pos_z:        10    # Cost for vertical position error
-Q_attitude:     50    # Cost for attitude error
+Q_pos_xy:       5     # Cost for horizontal positon error
+Q_pos_z:        5     # Cost for vertical position error
+Q_attitude:     800   # Cost for attitude error
 Q_velocity:     10    # Cost for velocity error
 Q_perc_angle:   0     # Cost for reprojection error to camera optical axis (PAMPC)
 Q_perc_radius:  0

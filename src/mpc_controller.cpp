@@ -45,11 +45,15 @@ MpcController<T>::MpcController(
     point_of_interest_(Eigen::Matrix<T, 6, 1>::Zero()) {
   pub_predicted_trajectory_ =
       nh_.advertise<nav_msgs::Path>(topic, 1);
+  pub_reference_trajectory_ =
+      nh_.advertise<nav_msgs::Path>("mpc/trajectory_reference", 1);
 
   sub_point_of_interest_ = nh_.subscribe("/line_poi", 1,
                                          &MpcController<T>::pointOfInterestCallback, this);
   sub_autopilot_off_ = nh_.subscribe("autopilot/off", 1,
                                      &MpcController<T>::offCallback, this);
+
+                        
 
   cost_serv_ = nh_.advertiseService("set_perception_cost", &MpcController<T>::setPerceptionCost, this);
 
@@ -219,6 +223,8 @@ quadrotor_common::ControlCommand MpcController<T>::run(
 
   // Publish the predicted trajectory.
   publishPrediction(predicted_states_, predicted_inputs_, call_time);
+  // Publish the reference trajectory for visualization.
+  publishReference(reference_states_, call_time);
 
   // Start a thread to prepare for the next execution.
   preparation_thread_ = std::thread(&MpcController<T>::preparationThread, this);
@@ -377,6 +383,34 @@ bool MpcController<T>::publishPrediction(
   }
 
   pub_predicted_trajectory_.publish(path_msg);
+
+  return true;
+}
+
+template<typename T>
+bool MpcController<T>::publishReference(
+    const Eigen::Ref<const Eigen::Matrix<T, kStateSize, kSamples + 1>> reference_states,
+    ros::Time& time) {
+  nav_msgs::Path path_msg;
+  path_msg.header.stamp = time;
+  path_msg.header.frame_id = "world";
+  geometry_msgs::PoseStamped pose;
+  T dt = mpc_wrapper_.getTimestep();
+
+  for (int i = 0; i < kSamples; i++) {
+    pose.header.stamp = time + ros::Duration(i * dt);
+    pose.header.seq = i;
+    pose.pose.position.x = reference_states(kPosX, i);
+    pose.pose.position.y = reference_states(kPosY, i);
+    pose.pose.position.z = reference_states(kPosZ, i);
+    pose.pose.orientation.w = reference_states(kOriW, i);
+    pose.pose.orientation.x = reference_states(kOriX, i);
+    pose.pose.orientation.y = reference_states(kOriY, i);
+    pose.pose.orientation.z = reference_states(kOriZ, i);
+    path_msg.poses.push_back(pose);
+  }
+
+  pub_reference_trajectory_.publish(path_msg);
 
   return true;
 }
