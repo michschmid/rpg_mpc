@@ -55,12 +55,10 @@ MpcWrapper<T>::MpcWrapper()
   acado_reference_states_.block(0, 0, kStateSize, kSamples) =
     hover_state.replicate(1, kSamples).template cast<float>();
 
-  // Point of interest
-  acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
-    Eigen::Matrix<float, 2, kSamples>::Zero();
-  // Distance 
-  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
-    (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << 1).finished().replicate(1, kSamples);
+  acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
+    Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
+  // acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
+  //   (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << -M_PI_2, 0).finished().replicate(1, kSamples);
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
@@ -87,7 +85,7 @@ MpcWrapper<T>::MpcWrapper()
   // TODO: make this dependent on the initial q_BC passed in the param file, 
   // this requires the wrapper object to be instantiated after the param loading in the mpc controller constructor 
   Eigen::Matrix<T, 6, 1> point_of_interest;
-  point_of_interest << 2, 0, 13, 4, 0.01, 13;
+  point_of_interest << 2, 0, 1, 4, 0.01, 1;
   // point_of_interest << -1000, 0, 0, -1000, 0;
 
   setCameraParameters(p_B_C, q_B_C);
@@ -226,11 +224,8 @@ bool MpcWrapper<T>::setReferencePose(
   acado_reference_states_.block(0, 0, kStateSize, kSamples) =
     state.replicate(1, kSamples).template cast<float>();
 
-  acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
-    Eigen::Matrix<float, 2, kSamples>::Zero();
-
-  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
-    (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << 1).finished().replicate(1, kSamples);
+  acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
+    Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
@@ -257,11 +252,8 @@ bool MpcWrapper<T>::setTrajectory(
   acado_reference_states_.block(0, 0, kStateSize, kSamples) =
     states.block(0, 0, kStateSize, kSamples).template cast<float>();
 
-  acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
-    Eigen::Matrix<float, 2, kSamples>::Zero();
-
-  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
-    (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << 1).finished().replicate(1, kSamples);
+  acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
+    Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();

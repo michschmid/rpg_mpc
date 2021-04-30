@@ -25,9 +25,8 @@ Q_pos_xy:       5     # Cost for horizontal positon error
 Q_pos_z:        5     # Cost for vertical position error
 Q_attitude:     800   # Cost for attitude error
 Q_velocity:     10    # Cost for velocity error
-Q_perc_angle:   800 #800     # Cost for reprojection error to camera optical axis (PAMPC)
-Q_perc_radius:  400 #400
-Q_dist :        100
+Q_perc_angle:   0     # Cost for reprojection error to camera optical axis (PAMPC)
+Q_perc_radius:  0
 
 # Cost on Inputs
 R_thrust:     1     # Cost on thrust input
