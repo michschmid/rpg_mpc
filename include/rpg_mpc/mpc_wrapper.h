@@ -68,7 +68,6 @@ class MpcWrapper
     Eigen::Quaternion<T>& q_B_C);
   bool setPointOfInterest(
     const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& position);
-
   bool setReferencePose(
     const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state);
   bool setTrajectory(
@@ -129,7 +128,7 @@ class MpcWrapper
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
     100 * Eigen::Matrix<T, 4, 1>::Ones(),
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
-    Eigen::Matrix<T, 2, 1>::Zero(),
+    Eigen::Matrix<T, 3, 1>::Zero(),
     1, 10, 10, 1).finished().asDiagonal();
 
   Eigen::Matrix<T, kEndRefSize, kEndRefSize> WN_ =
