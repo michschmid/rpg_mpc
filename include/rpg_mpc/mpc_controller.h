@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Float32.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 
 #include "rpg_mpc/mpc_wrapper.h"
@@ -133,6 +134,8 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   ros::Subscriber sub_autopilot_off_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_trajectory_;
+  ros::Publisher pub_angle_;
+  ros::Publisher pub_radius_;
   ros::ServiceServer cost_serv_;
 
   // Parameters
