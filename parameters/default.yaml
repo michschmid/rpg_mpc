@@ -27,7 +27,8 @@ Q_attitude:     800   # Cost for attitude error
 Q_velocity:     10    # Cost for velocity error
 Q_perc_angle:   400 #800     # Cost for reprojection error to camera optical axis (PAMPC)
 Q_perc_radius:  200 #400
-Q_dist :        100
+Q_dist_l:       100
+Q_dist_o:       400
 
 # Cost on Inputs
 R_thrust:     1     # Cost on thrust input

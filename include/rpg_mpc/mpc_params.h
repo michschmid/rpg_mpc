@@ -69,23 +69,25 @@ class MpcParams {
       return false
 
     // Read state costs.
-    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist;
+    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o;
     GET_PARAM(Q_pos_xy);
     GET_PARAM(Q_pos_z);
     GET_PARAM(Q_attitude);
     GET_PARAM(Q_velocity);
     quadrotor_common::getParam("Q_perc_angle", Q_perc_angle, (T)0.0, pnh);
     quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
-    quadrotor_common::getParam("Q_dist", Q_dist, (T)0.0, pnh);
+    quadrotor_common::getParam("Q_dist_l", Q_dist_l, (T)0.0, pnh);
+    quadrotor_common::getParam("Q_dist_o", Q_dist_o, (T)0.0, pnh);
 
     // Check whether all state costs are positive.
     if(Q_pos_xy           <= 0.0 ||
        Q_pos_z            <= 0.0 ||
        Q_attitude         <= 0.0 ||
        Q_velocity         <= 0.0 ||
-       Q_perc_angle       < 0.0 ||
+       Q_perc_angle       < 0.0 ||    // Perception cost can be zero to deactivate.
        Q_perc_radius      < 0.0 || 
-       Q_dist             < 0.0)      // Perception cost can be zero to deactivate.
+       Q_dist_l           < 0.0 || 
+       Q_dist_o           < 0.0 )      
     {
       ROS_ERROR("MPC: State cost Q has negative enries!");
       return false;
@@ -111,7 +113,7 @@ class MpcParams {
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
-      Q_perc_angle, Q_perc_radius, Q_dist).finished().asDiagonal();
+      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
 

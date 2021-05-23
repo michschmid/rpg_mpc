@@ -111,21 +111,32 @@ int main( ){
   
   // Distance from quadrotors position to powerline
   // TODO: the distance is unsigned! this might lead to a problem
-  IntermediateState d = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
+  IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
+
+  // Logistic cost on distance from quadrotor to obstacle
+  // It seems that acado only supports quadratic cost form, therefore the sqrt around the logistic function
+  const double p_o_x = 0.0;
+  const double p_o_y = 10.0;
+  const double p_o_z = 12.0;
+  const double r_o = 1;
+  const double lambda_o = 1;
+  // IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
+  IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y));
+  IntermediateState d_o_log_sqrt = sqrt(1 / (1 + exp(lambda_o * (d_o_k - r_o))));
 
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.
   h << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
-    << theta << radius << d
+    << theta << radius << d_l << d_o_log_sqrt
     << T << w_x << w_y << w_z;
 
   // End cost vector consists of all states (no inputs at last state).
   hN << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
-    << theta << radius << d;
+    << theta << radius << d_l << d_o_log_sqrt;
 
   // Running cost weight matrix
   DMatrix Q(h.getDim(), h.getDim());
@@ -142,11 +153,12 @@ int main( ){
   Q(9,9) = 10;    // vz
   Q(10,10) = 0;   // Cost on perception
   Q(11,11) = 0;   // Cost on perception
-  Q(12,12) = 1;   // Cost on distance 
-  Q(13,13) = 1;   // T
-  Q(14,14) = 1;   // wx
-  Q(15,15) = 1;   // wy
-  Q(16,16) = 1;   // wz
+  Q(12,12) = 0;   // Cost on distance to line
+  Q(13,13) = 0;   // Cost on distance to obstacle
+  Q(14,14) = 1;   // T
+  Q(15,15) = 1;   // wx
+  Q(16,16) = 1;   // wy
+  Q(17,17) = 1;   // wz
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -163,7 +175,8 @@ int main( ){
   QN(9,9) = Q(9,9);   // vz
   QN(10,10) = 0;  // Cost on perception
   QN(11,11) = 0;  // Cost on perception
-  QN(12,12) = 0;  // Cost on distance
+  QN(12,12) = 0;  // Cost on distance to line
+  QN(13,13) = 0;  // Cost on distance to obstacle
 
   // Set a reference for the analysis (if CODE_GEN is false).
   // Reference is at x = 2.0m in hover (qw = 1).
