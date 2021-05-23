@@ -215,6 +215,23 @@ quadrotor_common::ControlCommand MpcController<T>::run(
 
   float d = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
 
+  // Chance constraint
+  const double p_o_x = 0.0;
+  const double p_o_y = 10.0;
+  const double p_o_z = 12.0;
+  const double a_o = 1.0;
+  const double b_o = 1.0;
+  const double c_o = 1.0;
+  const double r_o = 1.0;
+  const double so = 0.001;
+  const double sb = 0.001;
+  float dp_norm = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
+  float n_o_x = (p_x - p_o_x) / dp_norm;
+  float n_o_y = (p_y - p_o_y) / dp_norm;
+  float n_o_z = (p_z - p_o_z) / dp_norm;
+  float cc = (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
+
+  ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
   ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
   ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);

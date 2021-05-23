@@ -113,16 +113,30 @@ int main( ){
   // TODO: the distance is unsigned! this might lead to a problem
   IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
 
-  // Logistic cost on distance from quadrotor to obstacle
-  // It seems that acado only supports quadratic cost form, therefore the sqrt around the logistic function
+  // Obstacle for prototyping
   const double p_o_x = 0.0;
   const double p_o_y = 10.0;
-  const double p_o_z = 12.0;
-  const double r_o = 1;
+  const double p_o_z = 15.0;
+  const double a_o = 1.0;
+  const double b_o = 0.5;
+  const double c_o = 2.0;
+  const double r_o = 0.4;
+  // Fix covariance
+  const double so = 0.001;
+  const double sb = 0.001;
+  // Logistic cost on distance from quadrotor to obstacle
+  // It seems that acado only supports quadratic cost form, therefore the sqrt around the logistic function
+  const double r_o_tune = 1;
   const double lambda_o = 1;
   // IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
   IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y));
-  IntermediateState d_o_log_sqrt = sqrt(1 / (1 + exp(lambda_o * (d_o_k - r_o))));
+  IntermediateState d_o_log_sqrt = sqrt(1 / (1 + exp(lambda_o * (d_o_k - r_o_tune))));
+
+  // Intermediate state for constraints
+  IntermediateState dp_norm = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
+  IntermediateState n_o_x = (p_x - p_o_x) / dp_norm;
+  IntermediateState n_o_y = (p_y - p_o_y) / dp_norm;
+  IntermediateState n_o_z = (p_z - p_o_z) / dp_norm;
 
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.
@@ -217,6 +231,8 @@ int main( ){
   ocp.subjectTo(-w_max_xy <= w_y <= w_max_xy);
   ocp.subjectTo(-w_max_yaw <= w_z <= w_max_yaw);
   ocp.subjectTo( T_min <= T <= T_max);
+  // Obstacle Chance constraint (delta = 0.05)
+  ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
   ocp.setNOD(13);
 

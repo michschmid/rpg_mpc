@@ -66,7 +66,7 @@ extern "C"
 /** Number of online data values. */
 #define ACADO_NOD 13
 /** Number of path constraints. */
-#define ACADO_NPAC 0
+#define ACADO_NPAC 1
 /** Number of control variables. */
 #define ACADO_NU 4
 /** Number of differential variables. */
@@ -158,6 +158,18 @@ real_t lbValues[ 80 ];
  */
 real_t ubValues[ 80 ];
 
+/** Column vector of size: 20
+ * 
+ *  Lower bounds values for affine constraints.
+ */
+real_t lbAValues[ 20 ];
+
+/** Column vector of size: 20
+ * 
+ *  Upper bounds values for affine constraints.
+ */
+real_t ubAValues[ 20 ];
+
 
 } ACADOvariables;
 
@@ -211,11 +223,35 @@ real_t QN1[ 100 ];
 /** Matrix of size: 10 x 14 (row major format) */
 real_t QN2[ 140 ];
 
+/** Column vector of size: 152 */
+real_t conAuxVar[ 152 ];
+
+/** Row vector of size: 27 */
+real_t conValueIn[ 27 ];
+
+/** Row vector of size: 15 */
+real_t conValueOut[ 15 ];
+
+/** Column vector of size: 20 */
+real_t evH[ 20 ];
+
+/** Matrix of size: 20 x 10 (row major format) */
+real_t evHx[ 200 ];
+
+/** Matrix of size: 20 x 4 (row major format) */
+real_t evHu[ 80 ];
+
+/** Column vector of size: 1 */
+real_t evHxd[ 1 ];
+
 /** Column vector of size: 210 */
 real_t sbar[ 210 ];
 
 /** Column vector of size: 10 */
 real_t Dx0[ 10 ];
+
+/** Matrix of size: 200 x 10 (row major format) */
+real_t C[ 2000 ];
 
 /** Matrix of size: 10 x 4 (row major format) */
 real_t W1[ 40 ];
@@ -238,6 +274,9 @@ real_t w2[ 10 ];
 /** Matrix of size: 80 x 80 (row major format) */
 real_t H[ 6400 ];
 
+/** Matrix of size: 20 x 80 (row major format) */
+real_t A[ 1600 ];
+
 /** Column vector of size: 80 */
 real_t g[ 80 ];
 
@@ -247,11 +286,17 @@ real_t lb[ 80 ];
 /** Column vector of size: 80 */
 real_t ub[ 80 ];
 
+/** Column vector of size: 20 */
+real_t lbA[ 20 ];
+
+/** Column vector of size: 20 */
+real_t ubA[ 20 ];
+
 /** Column vector of size: 80 */
 real_t x[ 80 ];
 
-/** Column vector of size: 80 */
-real_t y[ 80 ];
+/** Column vector of size: 100 */
+real_t y[ 100 ];
 
 
 } ACADOworkspace;
