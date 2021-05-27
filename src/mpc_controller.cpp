@@ -37,7 +37,7 @@ MpcController<T>::MpcController(
     timing_feedback_(T(1e-3)),
     timing_preparation_(T(1e-3)),
     est_state_((Eigen::Matrix<T, kStateSize, 1>() <<
-                                                  0, 0, 0, 1, 0, 0, 0, 0, 0, 0).finished()),
+                                                  0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0).finished()),
     reference_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
     reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples + 1>::Zero()),
     predicted_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
@@ -369,7 +369,7 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
                                           std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
   input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
                                           std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
-
+  ROS_INFO_THROTTLE(1, "alpha = %f", input_bounded(kAlpha));
   quadrotor_common::ControlCommand command;
 
   command.timestamp = time;
@@ -461,7 +461,8 @@ bool MpcController<T>::setNewParams(MpcParams<T>& params) {
   mpc_wrapper_.setCosts(params.Q_, params.R_);
   mpc_wrapper_.setLimits(
       params.min_thrust_, params.max_thrust_,
-      params.max_bodyrate_xy_, params.max_bodyrate_z_);
+      params.max_bodyrate_xy_, params.max_bodyrate_z_, 
+      params.min_alpha_, params.max_alpha_);
   mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
   params.changed_ = false;
   return true;

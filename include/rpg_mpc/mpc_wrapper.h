@@ -62,7 +62,7 @@ class MpcWrapper
     const T state_cost_scaling = 0.0, const T input_cost_scaling = 0.0);
 
   bool setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate);
+    T max_rollpitchrate, T max_yawrate, T min_alpha, T max_alpha);
   bool setCameraParameters(
     const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
     Eigen::Quaternion<T>& q_B_C);
@@ -118,10 +118,10 @@ class MpcWrapper
   Eigen::Map<Eigen::Matrix<float, kEndRefSize, kEndRefSize>>
     acado_W_end_{acadoVariables.WN};
 
-  Eigen::Map<Eigen::Matrix<float, 4, kSamples, Eigen::ColMajor>>
+  Eigen::Map<Eigen::Matrix<float, 5, kSamples, Eigen::ColMajor>>
     acado_lower_bounds_{acadoVariables.lbValues};
 
-  Eigen::Map<Eigen::Matrix<float, 4, kSamples, Eigen::ColMajor>>
+  Eigen::Map<Eigen::Matrix<float, 5, kSamples, Eigen::ColMajor>>
     acado_upper_bounds_{acadoVariables.ubValues};
 
   Eigen::Matrix<T, kRefSize, kRefSize> W_ = (Eigen::Matrix<T, kRefSize, 1>() <<
@@ -137,7 +137,7 @@ class MpcWrapper
   bool acado_is_prepared_{false};
   const T dt_{0.1};
   const Eigen::Matrix<real_t, kInputSize, 1> kHoverInput_ =
-    (Eigen::Matrix<real_t, kInputSize, 1>() << 9.81, 0.0, 0.0, 0.0).finished();
+    (Eigen::Matrix<real_t, kInputSize, 1>() << 9.81, 0.0, 0.0, 0.0, 0.0).finished();
 };
 
 

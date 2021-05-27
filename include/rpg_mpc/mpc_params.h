@@ -69,7 +69,7 @@ class MpcParams {
       return false
 
     // Read state costs.
-    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o;
+    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_dummy;
     GET_PARAM(Q_pos_xy);
     GET_PARAM(Q_pos_z);
     GET_PARAM(Q_attitude);
@@ -78,6 +78,7 @@ class MpcParams {
     quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_l", Q_dist_l, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_o", Q_dist_o, (T)0.0, pnh);
+    Q_dummy = 0.0;
 
     // Check whether all state costs are positive.
     if(Q_pos_xy           <= 0.0 ||
@@ -94,15 +95,17 @@ class MpcParams {
     }
 
     // Read input costs.
-    T R_thrust, R_pitchroll, R_yaw;
+    T R_thrust, R_pitchroll, R_yaw, R_alpha;
     GET_PARAM(R_thrust);
     GET_PARAM(R_pitchroll);
     GET_PARAM(R_yaw);
+    GET_PARAM(R_alpha);
 
     // Check whether all input costs are positive.
     if(R_thrust    <= 0.0 ||
        R_pitchroll <= 0.0 ||
-       R_yaw       <= 0.0)
+       R_yaw       <= 0.0 ||
+       R_alpha     <= 0.0)
     {
       ROS_ERROR("MPC: Input cost R has negative enries!");
       return false;
@@ -113,9 +116,9 @@ class MpcParams {
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
-      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o).finished().asDiagonal();
+      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_dummy).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-      R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
+      R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha).finished().asDiagonal();
 
     // Read cost scaling values
     quadrotor_common::getParam("state_cost_exponential",
@@ -128,6 +131,8 @@ class MpcParams {
     GET_PARAM_(max_bodyrate_z);
     GET_PARAM_(min_thrust);
     GET_PARAM_(max_thrust);
+    GET_PARAM_(min_alpha);
+    GET_PARAM_(max_alpha);
 
     // Check whether all input limits are positive.
     if(max_bodyrate_xy_ <= 0.0 ||
@@ -184,6 +189,8 @@ class MpcParams {
   T max_bodyrate_z_;
   T min_thrust_;
   T max_thrust_;
+  T min_alpha_;
+  T max_alpha_;
 
   Eigen::Matrix<T, 3, 1> p_B_C_;
   Eigen::Quaternion<T> q_B_C_;

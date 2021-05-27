@@ -42,7 +42,7 @@ MpcWrapper<T>::MpcWrapper()
   const Eigen::Matrix<T, kStateSize, 1> hover_state =
     (Eigen::Matrix<T, kStateSize, 1>() << 0.0, 0.0, 0.0,
                                           1.0, 0.0, 0.0, 0.0,
-                                          0.0, 0.0, 0.0).finished();
+                                          0.0, 0.0, 0.0, 0.0).finished();
 
   // Initialize states x and xN and input u.
   acado_initial_state_ = hover_state.template cast<float>();
@@ -149,7 +149,7 @@ bool MpcWrapper<T>::setCosts(
 // Set the input limits.
 template <typename T>
 bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate)
+    T max_rollpitchrate, T max_yawrate, T min_alpha, T max_alpha)
 {
   if(min_thrust <= 0.0 || min_thrust > max_thrust)
   {
@@ -176,12 +176,12 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
   }
 
   // Set input boundaries.
-  Eigen::Matrix<T, 4, 1> lower_bounds = Eigen::Matrix<T, 4, 1>::Zero();
-  Eigen::Matrix<T, 4, 1> upper_bounds = Eigen::Matrix<T, 4, 1>::Zero();
+  Eigen::Matrix<T, 5, 1> lower_bounds = Eigen::Matrix<T, 5, 1>::Zero();
+  Eigen::Matrix<T, 5, 1> upper_bounds = Eigen::Matrix<T, 5, 1>::Zero();
   lower_bounds << min_thrust,
-    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate;
+    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, min_alpha;
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, max_alpha;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();
