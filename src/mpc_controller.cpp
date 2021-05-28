@@ -218,11 +218,11 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // Chance constraint
   const double p_o_x = 0.0;
   const double p_o_y = 10.0;
-  const double p_o_z = 12.0;
+  const double p_o_z = 15.0;
   const double a_o = 1.0;
-  const double b_o = 1.0;
-  const double c_o = 1.0;
-  const double r_o = 1.0;
+  const double b_o = 0.5;
+  const double c_o = 2.0;
+  const double r_o = 0.4;
   const double so = 0.001;
   const double sb = 0.001;
   float dp_norm = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
@@ -232,8 +232,8 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float cc = (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
 
   ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
-  ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
-  ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
+  // ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
+  // ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);
 
   // ROS_INFO_THROTTLE(0.5, "DEBUG: Sx1 = %f, Sy1 = %f, Sz1 = %f", intSx1, intSy1, intSz1);
@@ -369,7 +369,7 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
                                           std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
   input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
                                           std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
-  ROS_INFO_THROTTLE(1, "alpha = %f", input_bounded(kAlpha));
+  ROS_INFO_THROTTLE(1, "alpha = %f", input_bounded(INPUT::kAlpha));
   quadrotor_common::ControlCommand command;
 
   command.timestamp = time;

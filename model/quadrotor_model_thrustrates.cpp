@@ -51,7 +51,7 @@ int main( ){
   DifferentialState     p_x, p_y, p_z;
   DifferentialState     q_w, q_x, q_y, q_z;
   DifferentialState     v_x, v_y, v_z;
-  DifferentialState     dummy;
+  DifferentialState     dummy; // workaround for https://github.com/acado/acado/issues/79 
   Control               T, w_x, w_y, w_z;
   Control               alpha;
   DifferentialEquation  f;
@@ -70,8 +70,8 @@ int main( ){
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
-  const double alpha_min = 0;
-  const double alpha_max = 10;
+  const double alpha_min = 0.001;
+  const double alpha_max = 1000;
 
   // Bias to prevent division by zero.
   const double epsilon1 = 0.1;     // Camera projection recover bias [m]
@@ -90,6 +90,11 @@ int main( ){
   f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * T;
   f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z;
   f << dot(dummy) == alpha;
+
+  // Optimization variable to trade-off between perception awareness and obstacle avoidance
+  const double epsilon3 = 0.1; // inverse of this determines the maximum inverse of alpha
+  IntermediateState alpha_inv = 1/(alpha+epsilon2);
+
 
   // Intermediate states to calculate point of interest projection!
   // IMPORTANT: This assumes the camera coordinate system to be oriented as in the paper (optical axis z, y down),
@@ -111,8 +116,8 @@ int main( ){
   // Calculate polar representation
   IntermediateState theta, radius;
   // TODO: as edge case could still lead to a division by zero if v_norm2 - v_norm1 = - epsilon2, make sure this never happens!!
-  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
+  theta = alpha_inv * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
+  radius = alpha_inv * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
   
   // Distance from quadrotors position to powerline
   // TODO: the distance is unsigned! this might lead to a problem
@@ -154,8 +159,8 @@ int main( ){
   // End cost vector consists of all states (no inputs at last state).
   hN << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
-    << v_x << v_y << v_z
-    << theta << radius << d_l << d_o_log_sqrt;
+    << v_x << v_y << v_z;
+  //  << theta << radius << d_l << d_o_log_sqrt;
 
   // Running cost weight matrix
   DMatrix Q(h.getDim(), h.getDim());
@@ -193,10 +198,13 @@ int main( ){
   QN(7,7) = Q(7,7);   // vx
   QN(8,8) = Q(8,8);   // vy
   QN(9,9) = Q(9,9);   // vz
-  QN(10,10) = 0;  // Cost on perception
-  QN(11,11) = 0;  // Cost on perception
-  QN(12,12) = 0;  // Cost on distance to line
-  QN(13,13) = 0;  // Cost on distance to obstacle
+  // As there exist no slack variables and control can't be in the 
+  // terminal objective function the following is not working together
+  // with the slack variable alpha
+  // QN(10,10) = 0;  // Cost on perception
+  // QN(11,11) = 0;  // Cost on perception
+  // QN(12,12) = 0;  // Cost on distance to line
+  // QN(13,13) = 0;  // Cost on distance to obstacle
 
   // Set a reference for the analysis (if CODE_GEN is false).
   // Reference is at x = 2.0m in hover (qw = 1).
@@ -239,7 +247,7 @@ int main( ){
   ocp.subjectTo( T_min <= T <= T_max);
   ocp.subjectTo( alpha_min <= alpha <= alpha_max);
   // Obstacle Chance constraint (delta = 0.05)
-  ocp.subjectTo(alpha + (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
+  ocp.subjectTo(alpha_inv + (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
   ocp.setNOD(13);
 

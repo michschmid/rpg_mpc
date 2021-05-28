@@ -175,6 +175,13 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
     return false;
   }
 
+  if(min_alpha < 0.0)
+  {
+    ROS_ERROR("MPC: Minimal soft-constraint value is not set properly, not changed.");
+    return false;
+  }
+
+
   // Set input boundaries.
   Eigen::Matrix<T, 5, 1> lower_bounds = Eigen::Matrix<T, 5, 1>::Zero();
   Eigen::Matrix<T, 5, 1> upper_bounds = Eigen::Matrix<T, 5, 1>::Zero();

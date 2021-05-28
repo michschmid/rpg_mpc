@@ -47,6 +47,8 @@ class MpcParams {
     max_bodyrate_z_(0.0),
     min_thrust_(0.0),
     max_thrust_(0.0),
+    min_alpha_(0.0),
+    max_alpha_(0.0),
     p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
     q_B_C_(Eigen::Quaternion<T>(1.0, 0.0, 0.0, 0.0)),
     Q_(Eigen::Matrix<T, kCostSize, kCostSize>::Zero()),
@@ -138,7 +140,9 @@ class MpcParams {
     if(max_bodyrate_xy_ <= 0.0 ||
        max_bodyrate_z_  <= 0.0 ||
        min_thrust_      <= 0.0 ||
-       max_thrust_      <= 0.0)
+       max_thrust_      <= 0.0 ||
+       min_alpha_       <  0.0 ||
+       max_alpha_       <= 0.0)
     {
       ROS_ERROR("MPC: All limits must be positive non-zero values!");
       return false;
