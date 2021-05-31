@@ -70,7 +70,7 @@ int main( ){
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
-  const double alpha_min = 0.001;
+  const double alpha_min = 0.0;
   const double alpha_max = 1000;
 
   // Bias to prevent division by zero.
@@ -93,7 +93,7 @@ int main( ){
 
   // Optimization variable to trade-off between perception awareness and obstacle avoidance
   const double epsilon3 = 0.1; // inverse of this determines the maximum inverse of alpha
-  IntermediateState alpha_inv = 1/(alpha+epsilon2);
+  IntermediateState alpha_inv = 1/(alpha+epsilon3);
 
 
   // Intermediate states to calculate point of interest projection!
@@ -118,7 +118,7 @@ int main( ){
   // TODO: as edge case could still lead to a division by zero if v_norm2 - v_norm1 = - epsilon2, make sure this never happens!!
   theta = alpha_inv * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
   radius = alpha_inv * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
-  
+
   // Distance from quadrotors position to powerline
   // TODO: the distance is unsigned! this might lead to a problem
   IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
@@ -183,7 +183,7 @@ int main( ){
   Q(15,15) = 1;   // wx
   Q(16,16) = 1;   // wy
   Q(17,17) = 1;   // wz
-  Q(18,18) = 0;   // dummy
+  Q(18,18) = 1;   // alpha
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -238,6 +238,9 @@ int main( ){
     ocp.minimizeLSQEndTerm( QN_sparse, hN );
   }
 
+  // constraint on slack variable
+  // ocp.subjectTo( alpha_min <= alpha <= alpha_max);
+  ocp.subjectTo( alpha_min <= alpha <= alpha_max);
   // Add system dynamics
   ocp.subjectTo( f );
   // Add constraints
@@ -245,9 +248,9 @@ int main( ){
   ocp.subjectTo(-w_max_xy <= w_y <= w_max_xy);
   ocp.subjectTo(-w_max_yaw <= w_z <= w_max_yaw);
   ocp.subjectTo( T_min <= T <= T_max);
-  ocp.subjectTo( alpha_min <= alpha <= alpha_max);
   // Obstacle Chance constraint (delta = 0.05)
   ocp.subjectTo(alpha_inv + (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
+  // ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
   ocp.setNOD(13);
 

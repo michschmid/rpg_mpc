@@ -153,6 +153,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float     p_x, p_y, p_z;
   float     q_w, q_x, q_y, q_z;
   float     v_x, v_y, v_z;
+  float     dummy;
   p_x = predicted_states_(kPosX);
   p_y = predicted_states_(kPosY);
   p_z = predicted_states_(kPosZ);
@@ -163,6 +164,8 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   v_x = predicted_states_(kVelX);
   v_y = predicted_states_(kVelY);
   v_z = predicted_states_(kVelZ);
+  dummy = predicted_states_(kDummy);
+  // ROS_INFO("DEBUG: dummy = %f", dummy);
   // Online data
   float     p_F1_x, p_F1_y, p_F1_z, p_F2_x, p_F2_y, p_F2_z;
   float     t_B_C_x, t_B_C_y, t_B_C_z;
@@ -369,7 +372,7 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
                                           std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
   input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
                                           std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
-  ROS_INFO_THROTTLE(1, "alpha = %f", input_bounded(INPUT::kAlpha));
+  ROS_INFO("alpha = %f, T = %f", input_bounded(INPUT::kAlpha), input_bounded(INPUT::kThrust));
   quadrotor_common::ControlCommand command;
 
   command.timestamp = time;
