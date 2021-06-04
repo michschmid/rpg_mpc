@@ -96,17 +96,19 @@ class MpcParams {
     }
 
     // Read input costs.
-    T R_thrust, R_pitchroll, R_yaw, R_alpha;
+    T R_thrust, R_pitchroll, R_yaw, R_alpha, R_slack;
     GET_PARAM(R_thrust);
     GET_PARAM(R_pitchroll);
     GET_PARAM(R_yaw);
     GET_PARAM(R_alpha);
+    GET_PARAM(R_slack);
 
     // Check whether all input costs are positive.
     if(R_thrust    <= 0.0 ||
        R_pitchroll <= 0.0 ||
        R_yaw       <= 0.0 ||
-       R_alpha     < 0.0)
+       R_alpha     < 0.0 ||
+       R_slack     < 0.0)
     {
       ROS_ERROR("MPC: Input cost R has negative enries!");
       return false;
@@ -119,7 +121,7 @@ class MpcParams {
       Q_velocity, Q_velocity, Q_velocity,
       Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-      R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha).finished().asDiagonal();
+      R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha, R_slack).finished().asDiagonal();
 
     // Read cost scaling values
     quadrotor_common::getParam("state_cost_exponential",

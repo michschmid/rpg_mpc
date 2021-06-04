@@ -50,10 +50,9 @@ int main( ){
   // System variables
   DifferentialState     p_x, p_y, p_z;
   DifferentialState     q_w, q_x, q_y, q_z;
-  DifferentialState     v_x, v_y, v_z;
-  DifferentialState     dummy; // workaround for https://github.com/acado/acado/issues/79 
+  DifferentialState     v_x, v_y, v_z; 
   Control               T, w_x, w_y, w_z;
-  Control               alpha;
+  Control               alpha, slack;
   DifferentialEquation  f;
   Function              h, hN;
   OnlineData            p_F1_x, p_F1_y, p_F1_z, p_F2_x, p_F2_y, p_F2_z;
@@ -71,11 +70,12 @@ int main( ){
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
   const double alpha_min = 0.0;
-  const double alpha_max = 1000;
+  const double alpha_max = 10;
 
   // Bias to prevent division by zero.
   const double epsilon1 = 0.1;     // Camera projection recover bias [m]
   const double epsilon2 = 0.001;   // Cartesian to polar conversion bias [m]
+  const double epsilon3 = 0.001; // Bias for sqrt
 
 
   // System Dynamics
@@ -88,13 +88,10 @@ int main( ){
   f << dot(q_z) ==  0.5 * ( w_z * q_w + w_y * q_x - w_x * q_y);
   f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * T;
   f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * T;
-  f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z;
-  f << dot(dummy) == alpha;
+  f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z + 0.000000001 * alpha + + 0.000000001 * slack; // workaround for https://github.com/acado/acado/issues/79 
 
   // Optimization variable to trade-off between perception awareness and obstacle avoidance
-  const double epsilon3 = 0.1; // inverse of this determines the maximum inverse of alpha
-  IntermediateState alpha_inv = 1/(alpha+epsilon3);
-
+  IntermediateState alpha_frac = 1 - alpha/alpha_max;
 
   // Intermediate states to calculate point of interest projection!
   // IMPORTANT: This assumes the camera coordinate system to be oriented as in the paper (optical axis z, y down),
@@ -116,12 +113,12 @@ int main( ){
   // Calculate polar representation
   IntermediateState theta, radius;
   // TODO: as edge case could still lead to a division by zero if v_norm2 - v_norm1 = - epsilon2, make sure this never happens!!
-  theta = alpha_inv * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
-  radius = alpha_inv * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
+  theta = alpha_frac * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
+  radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
 
   // Distance from quadrotors position to powerline
   // TODO: the distance is unsigned! this might lead to a problem
-  IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
+  IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
 
   // Obstacle for prototyping
   const double p_o_x = 0.0;
@@ -139,11 +136,11 @@ int main( ){
   const double r_o_tune = 1;
   const double lambda_o = 1;
   // IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
-  IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y));
-  IntermediateState d_o_log_sqrt = sqrt(1 / (1 + exp(lambda_o * (d_o_k - r_o_tune))));
+  IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + epsilon3);
+  IntermediateState d_o_log_sqrt = sqrt(1 / (1 + exp(lambda_o * (d_o_k - r_o_tune))) + epsilon3);
 
   // Intermediate state for constraints
-  IntermediateState dp_norm = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
+  IntermediateState dp_norm = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z) + epsilon3);
   IntermediateState n_o_x = (p_x - p_o_x) / dp_norm;
   IntermediateState n_o_y = (p_y - p_o_y) / dp_norm;
   IntermediateState n_o_z = (p_z - p_o_z) / dp_norm;
@@ -154,7 +151,7 @@ int main( ){
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
     << theta << radius << d_l << d_o_log_sqrt
-    << T << w_x << w_y << w_z << alpha;
+    << T << w_x << w_y << w_z << alpha << slack;
 
   // End cost vector consists of all states (no inputs at last state).
   hN << p_x << p_y << p_z
@@ -184,6 +181,7 @@ int main( ){
   Q(16,16) = 1;   // wy
   Q(17,17) = 1;   // wz
   Q(18,18) = 1;   // alpha
+  Q(19,19) = 100;   // slack
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -238,9 +236,6 @@ int main( ){
     ocp.minimizeLSQEndTerm( QN_sparse, hN );
   }
 
-  // constraint on slack variable
-  // ocp.subjectTo( alpha_min <= alpha <= alpha_max);
-  ocp.subjectTo( alpha_min <= alpha <= alpha_max);
   // Add system dynamics
   ocp.subjectTo( f );
   // Add constraints
@@ -248,8 +243,14 @@ int main( ){
   ocp.subjectTo(-w_max_xy <= w_y <= w_max_xy);
   ocp.subjectTo(-w_max_yaw <= w_z <= w_max_yaw);
   ocp.subjectTo( T_min <= T <= T_max);
+  // constraint on slack variable
+  ocp.subjectTo( alpha_min <= alpha <= alpha_max);
+  ocp.subjectTo( 0.0 <= slack);
   // Obstacle Chance constraint (delta = 0.05)
-  ocp.subjectTo(alpha_inv + (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
+  const double factor = 1;
+  // ocp.subjectTo(factor*alpha_frac + 1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))+epsilon3) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
+  ocp.subjectTo(factor*alpha_frac - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) - slack <= 0);
+  // ocp.subjectTo(1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))+epsilon3) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
   // ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
   ocp.setNOD(13);

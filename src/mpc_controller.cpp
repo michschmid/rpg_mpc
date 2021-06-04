@@ -37,7 +37,7 @@ MpcController<T>::MpcController(
     timing_feedback_(T(1e-3)),
     timing_preparation_(T(1e-3)),
     est_state_((Eigen::Matrix<T, kStateSize, 1>() <<
-                                                  0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0).finished()),
+                                                  0, 0, 0, 1, 0, 0, 0, 0, 0, 0).finished()),
     reference_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
     reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples + 1>::Zero()),
     predicted_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
@@ -146,14 +146,13 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // Could not find a way to output acado intermediateState, therefore redo here for debugging
   // mpc_wrapper_.getReferenceState(1, reference_state_check_);
   // ROS_INFO("DEBUG: u_ref = %f , v_ref = %f", reference_state_check_[14], reference_state_check_[14]);
-  mpc_wrapper_.getOnlineData(online_data_check_);
+  // mpc_wrapper_.getOnlineData(online_data_check_);
   // ROS_INFO("DEBUG: test = %f", online_data_check_[0]);
   const double epsilon = 0.1; 
   // States
   float     p_x, p_y, p_z;
   float     q_w, q_x, q_y, q_z;
   float     v_x, v_y, v_z;
-  float     dummy;
   p_x = predicted_states_(kPosX);
   p_y = predicted_states_(kPosY);
   p_z = predicted_states_(kPosZ);
@@ -164,8 +163,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   v_x = predicted_states_(kVelX);
   v_y = predicted_states_(kVelY);
   v_z = predicted_states_(kVelZ);
-  dummy = predicted_states_(kDummy);
-  // ROS_INFO("DEBUG: dummy = %f", dummy);
+  // std::cout << predicted_states_ << "\n";
   // Online data
   float     p_F1_x, p_F1_y, p_F1_z, p_F2_x, p_F2_y, p_F2_z;
   float     t_B_C_x, t_B_C_y, t_B_C_z;
@@ -232,7 +230,11 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float n_o_x = (p_x - p_o_x) / dp_norm;
   float n_o_y = (p_y - p_o_y) / dp_norm;
   float n_o_z = (p_z - p_o_z) / dp_norm;
-  float cc = (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
+  // float cc = (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
+  float alpha = predicted_inputs_(kAlpha);
+  float alpha_max = 10.0;
+  float factor = 1;
+  float cc = factor*(1 - alpha/alpha_max) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
 
   ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
@@ -250,13 +252,14 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   publishPrediction(predicted_states_, predicted_inputs_, call_time);
   // Publish the reference trajectory for visualization.
   publishReference(reference_states_, call_time);
-  // Publish the projection for debugging
-  std_msgs::Float32 msg_angle;
-  msg_angle.data = theta;
-  pub_angle_.publish(msg_angle);
-  std_msgs::Float32 msg_radius;
-  msg_radius.data = radius;
-  pub_radius_.publish(msg_radius);
+  // Publish the projection for debugging and visualization
+  // TODO: This can be done better by retrieving the full state x of the acado variables
+  // std_msgs::Float32 msg_angle;
+  // msg_angle.data = theta;
+  // pub_angle_.publish(msg_angle);
+  // std_msgs::Float32 msg_radius;
+  // msg_radius.data = radius;
+  // pub_radius_.publish(msg_radius);
 
   // Start a thread to prepare for the next execution.
   preparation_thread_ = std::thread(&MpcController<T>::preparationThread, this);
@@ -372,7 +375,13 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
                                           std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
   input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
                                           std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
-  ROS_INFO("alpha = %f, T = %f", input_bounded(INPUT::kAlpha), input_bounded(INPUT::kThrust));
+  ROS_INFO_THROTTLE(0.5, "T = %f, x = %f, y = %f, z = %f, alpha = %f, slack = %f ", 
+           input_bounded(INPUT::kThrust), 
+           input_bounded(INPUT::kRateX), 
+           input_bounded(INPUT::kRateY), 
+           input_bounded(INPUT::kRateZ), 
+           input_bounded(INPUT::kAlpha), 
+           input_bounded(INPUT::kSlack));
   quadrotor_common::ControlCommand command;
 
   command.timestamp = time;

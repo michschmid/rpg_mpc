@@ -183,12 +183,12 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
 
 
   // Set input boundaries.
-  Eigen::Matrix<T, 5, 1> lower_bounds = Eigen::Matrix<T, 5, 1>::Zero();
-  Eigen::Matrix<T, 5, 1> upper_bounds = Eigen::Matrix<T, 5, 1>::Zero();
+  Eigen::Matrix<T, 6, 1> lower_bounds = Eigen::Matrix<T, 6, 1>::Zero();
+  Eigen::Matrix<T, 6, 1> upper_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   lower_bounds << min_thrust,
-    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, min_alpha;
+    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, min_alpha, 0.0;
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate, max_alpha;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, max_alpha, std::numeric_limits<T>::infinity();
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();

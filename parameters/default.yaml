@@ -25,10 +25,10 @@ Q_pos_xy:       5     # Cost for horizontal positon error
 Q_pos_z:        5     # Cost for vertical position error
 Q_attitude:     800   # Cost for attitude error
 Q_velocity:     10    # Cost for velocity error
-Q_perc_angle:   40 #800     # Cost for reprojection error to camera optical axis (PAMPC)
-Q_perc_radius:  20 #400
+Q_perc_angle:   400 #800     # Cost for reprojection error to camera optical axis (PAMPC)
+Q_perc_radius:  200 #400
 Q_dist_l:       0
-Q_dist_o:       0
+Q_dist_o:       50
 
 # Cost on Inputs
 R_thrust:     1     # Cost on thrust input
@@ -36,7 +36,8 @@ R_pitchroll:  1     # Cost on pitch and roll rate
 R_yaw:        1     # Cost on yaw rate
 
 # Cost on Slack Variable
-R_alpha: 100
+R_alpha: 10
+R_slack: 1000
 
 # Exponential scaling: W_i = W * exp(-i/N * cost_scaling).
 # cost_scaling = 0 means no scaling W_i = W. 
@@ -51,7 +52,7 @@ max_thrust:         20.0      # ~ 200% gravity [N]
 
 #Limits on Slack variable
 min_alpha:          0.0
-max_alpha:          1000000.0
+max_alpha:          10.0
 
 # Extrinsics for Perception Aware MPC
 p_B_C:      [ 0.0, 0.0, 0.0 ]               # camera in body center [m]

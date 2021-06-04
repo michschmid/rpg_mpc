@@ -57,8 +57,7 @@ enum STATE {
   kOriZ = 6,
   kVelX = 7,
   kVelY = 8,
-  kVelZ = 9,
-  kDummy = 10
+  kVelZ = 9
 };
 
 enum INPUT {
@@ -66,7 +65,8 @@ enum INPUT {
   kRateX = 1,
   kRateY = 2,
   kRateZ = 3,
-  kAlpha = 4
+  kAlpha = 4, 
+  kSlack = 5
 };
 
 template<typename T>
@@ -75,9 +75,9 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static_assert(kStateSize == 11,
+  static_assert(kStateSize == 10,
                 "MpcController: Wrong model size. Number of states does not match.");
-  static_assert(kInputSize == 5,
+  static_assert(kInputSize == 6,
                 "MpcController: Wrong model size. Number of inputs does not match.");
 
   MpcController(const ros::NodeHandle& nh,
