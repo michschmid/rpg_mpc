@@ -42,7 +42,8 @@ MpcWrapper<T>::MpcWrapper()
   const Eigen::Matrix<T, kStateSize, 1> hover_state =
     (Eigen::Matrix<T, kStateSize, 1>() << 0.0, 0.0, 0.0,
                                           1.0, 0.0, 0.0, 0.0,
-                                          0.0, 0.0, 0.0).finished();
+                                          0.0, 0.0, 0.0,
+                                          0.0, 0.0).finished();
 
   // Initialize states x and xN and input u.
   acado_initial_state_ = hover_state.template cast<float>();
@@ -180,8 +181,10 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
   Eigen::Matrix<T, 6, 1> upper_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   lower_bounds << min_thrust,
     -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, 0.0, 0.0;
+  // TODO: setting a limit for alpha max not euqal to Inf will sometimes lead to odd behaviour
+  // alpha jumping between 0 and upper bound for no reason
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate, std::numeric_limits<T>::infinity, std::numeric_limits<T>::infinity;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, 10.0, std::numeric_limits<T>::infinity;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();

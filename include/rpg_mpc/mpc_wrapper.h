@@ -33,7 +33,7 @@ namespace rpg_mpc {
 #include "acado_common.h"
 
 static constexpr int kSamples = ACADO_N;      // number of samples
-static constexpr int kStateSize = ACADO_NX-2;   // number of states (differentail states - 2 dummy)
+static constexpr int kStateSize = ACADO_NX;   // number of states (differentail states - 2 dummy)
 static constexpr int kRefSize = ACADO_NY;     // number of reference states
 static constexpr int kEndRefSize = ACADO_NYN; // number of end reference states
 static constexpr int kInputSize = ACADO_NU;   // number of inputs
@@ -128,7 +128,7 @@ class MpcWrapper
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
     100 * Eigen::Matrix<T, 4, 1>::Ones(),
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
-    Eigen::Matrix<T, 4, 1>::Zero(),
+    Eigen::Matrix<T, 6, 1>::Zero(),
     1, 10, 10, 1, 1, 1).finished().asDiagonal();
 
   Eigen::Matrix<T, kEndRefSize, kEndRefSize> WN_ =
