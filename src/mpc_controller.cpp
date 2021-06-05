@@ -231,9 +231,9 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float n_o_z = (p_z - p_o_z) / dp_norm;
   float cc = (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
 
-  ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
-  ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
-  ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
+  // ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
+  // ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
+  // ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);
 
   // ROS_INFO_THROTTLE(0.5, "DEBUG: Sx1 = %f, Sy1 = %f, Sz1 = %f", intSx1, intSy1, intSz1);
@@ -369,6 +369,8 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
                                           std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
   input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
                                           std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
+
+  ROS_INFO( "alpha = %f, slack = %f", input_bounded(INPUT::kAlpha), input_bounded(INPUT::kSlack));
 
   quadrotor_common::ControlCommand command;
 

@@ -51,7 +51,9 @@ int main( ){
   DifferentialState     p_x, p_y, p_z;
   DifferentialState     q_w, q_x, q_y, q_z;
   DifferentialState     v_x, v_y, v_z;
+  DifferentialState     dummy;
   Control               T, w_x, w_y, w_z;
+  Control               alpha, slack;
   DifferentialEquation  f;
   Function              h, hN;
   OnlineData            p_F1_x, p_F1_y, p_F1_z, p_F2_x, p_F2_y, p_F2_z;
@@ -68,6 +70,7 @@ int main( ){
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
+  const double alpha_max = 10;
 
   // Bias to prevent division by zero.
   const double epsilon1 = 0.1;     // Camera projection recover bias [m]
@@ -85,6 +88,7 @@ int main( ){
   f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * T;
   f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * T;
   f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z;
+  f << dot(dummy) == 0.0000001 * alpha + 0.0000001 * slack;
 
   // Intermediate states to calculate point of interest projection!
   // IMPORTANT: This assumes the camera coordinate system to be oriented as in the paper (optical axis z, y down),
@@ -143,14 +147,15 @@ int main( ){
   h << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
+    << dummy
     << theta << radius << d_l << d_o_log_sqrt
-    << T << w_x << w_y << w_z;
+    << T << w_x << w_y << w_z << alpha << slack;
 
   // End cost vector consists of all states (no inputs at last state).
   hN << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
-    << theta << radius << d_l << d_o_log_sqrt;
+    << dummy;
 
   // Running cost weight matrix
   DMatrix Q(h.getDim(), h.getDim());
@@ -165,14 +170,17 @@ int main( ){
   Q(7,7) = 10;    // vx
   Q(8,8) = 10;    // vy
   Q(9,9) = 10;    // vz
-  Q(10,10) = 0;   // Cost on perception
+  Q(10,10) = 0;  // dummy
   Q(11,11) = 0;   // Cost on perception
-  Q(12,12) = 0;   // Cost on distance to line
-  Q(13,13) = 0;   // Cost on distance to obstacle
-  Q(14,14) = 1;   // T
-  Q(15,15) = 1;   // wx
-  Q(16,16) = 1;   // wy
-  Q(17,17) = 1;   // wz
+  Q(12,12) = 0;   // Cost on perception
+  Q(13,13) = 0;   // Cost on distance to line
+  Q(14,14) = 0;   // Cost on distance to obstacle
+  Q(15,15) = 1;   // T
+  Q(16,16) = 1;   // wx
+  Q(17,17) = 1;   // wy
+  Q(18,18) = 1;   // wz
+  Q(19,19) = 1;   // alpha
+  Q(20,20) = 1;   // slack
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -187,10 +195,7 @@ int main( ){
   QN(7,7) = Q(7,7);   // vx
   QN(8,8) = Q(8,8);   // vy
   QN(9,9) = Q(9,9);   // vz
-  QN(10,10) = 0;  // Cost on perception
-  QN(11,11) = 0;  // Cost on perception
-  QN(12,12) = 0;  // Cost on distance to line
-  QN(13,13) = 0;  // Cost on distance to obstacle
+  QN(10,10) = 0;      // dummy
 
   // Set a reference for the analysis (if CODE_GEN is false).
   // Reference is at x = 2.0m in hover (qw = 1).
@@ -231,6 +236,8 @@ int main( ){
   ocp.subjectTo(-w_max_xy <= w_y <= w_max_xy);
   ocp.subjectTo(-w_max_yaw <= w_z <= w_max_yaw);
   ocp.subjectTo( T_min <= T <= T_max);
+  ocp.subjectTo( 0.0 <= alpha <= alpha_max);
+  ocp.subjectTo( 0.0 <= slack);
   // Obstacle Chance constraint (delta = 0.05)
   ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
