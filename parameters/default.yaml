@@ -36,8 +36,8 @@ R_pitchroll:  1     # Cost on pitch and roll rate
 R_yaw:        1     # Cost on yaw rate
 
 # Cost on slack variables
-R_alpha: 100
-R_slack: 100
+R_alpha: 1000
+R_slack: 1000
 
 # Exponential scaling: W_i = W * exp(-i/N * cost_scaling).
 # cost_scaling = 0 means no scaling W_i = W. 

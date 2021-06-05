@@ -51,7 +51,7 @@ int main( ){
   DifferentialState     p_x, p_y, p_z;
   DifferentialState     q_w, q_x, q_y, q_z;
   DifferentialState     v_x, v_y, v_z;
-  DifferentialState     dummy;
+  DifferentialState     dummy_1, dummy_2;
   Control               T, w_x, w_y, w_z;
   Control               alpha, slack;
   DifferentialEquation  f;
@@ -88,7 +88,8 @@ int main( ){
   f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * T;
   f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * T;
   f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z;
-  f << dot(dummy) == 0.0000001 * alpha + 0.0000001 * slack;
+  f << dot(dummy_1) == alpha;
+  f << dot(dummy_2) == slack;
 
   // Intermediate states to calculate point of interest projection!
   // IMPORTANT: This assumes the camera coordinate system to be oriented as in the paper (optical axis z, y down),
@@ -235,7 +236,7 @@ int main( ){
   ocp.subjectTo( 0.0 <= alpha <= alpha_max);
   ocp.subjectTo( 0.0 <= slack);
   // Obstacle Chance constraint (delta = 0.05)
-  ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
+  // ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
   ocp.setNOD(13);
 
