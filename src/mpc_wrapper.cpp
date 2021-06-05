@@ -270,6 +270,7 @@ bool MpcWrapper<T>::setTrajectory(
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();
+  std::cout << acado_reference_states_ << "\n";
 
   acado_reference_end_state_.segment(0, kStateSize) =
     states.col(kSamples).template cast<float>();

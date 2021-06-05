@@ -314,12 +314,15 @@ bool MpcController<T>::setReference(
         q_orientation.x(),
         q_orientation.y(),
         q_orientation.z(),
-        reference_trajectory.points.front().velocity.template cast<T>()
+        reference_trajectory.points.front().velocity.template cast<T>(), 
+        0.0, 0.0
     ).finished().replicate(1, kSamples + 1);
 
     acceleration << reference_trajectory.points.front().acceleration.template cast<T>() - gravity;
+    // TODO: it was here where the bug hiding for so long, make this clearer as it overwrites initialization
+    // not set fields are initialized to a potentially non-zero number
     reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() << acceleration.norm(),
-        reference_trajectory.points.front().bodyrates.template cast<T>()
+        reference_trajectory.points.front().bodyrates.template cast<T>(), 0.0, 0.0
     ).finished().replicate(1, kSamples + 1);
   } else {
     auto iterator(reference_trajectory.points.begin());
@@ -341,14 +344,15 @@ bool MpcController<T>::setReference(
           q_orientation.x(),
           q_orientation.y(),
           q_orientation.z(),
-          iterator->velocity.template cast<T>();
+          iterator->velocity.template cast<T>(),
+          0.0, 0.0;
       if (reference_states_.col(i).segment(kOriW, 4).dot(
           est_state_.segment(kOriW, 4)) < 0.0)
         reference_states_.block(kOriW, i, 4, 1) =
             -reference_states_.block(kOriW, i, 4, 1);
       acceleration << iterator->acceleration.template cast<T>() - gravity;
       reference_inputs_.col(i) << acceleration.norm(),
-          iterator->bodyrates.template cast<T>();
+          iterator->bodyrates.template cast<T>(), 0.0, 0.0;
       quaternion_norm_ok &= abs(est_state_.segment(kOriW, 4).norm() - 1.0) < 0.1;
     }
   }
