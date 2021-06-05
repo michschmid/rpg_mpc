@@ -76,9 +76,9 @@ extern "C"
 /** Number of differential derivative variables. */
 #define ACADO_NXD 0
 /** Number of references/measurements per node on the first N nodes. */
-#define ACADO_NY 21
+#define ACADO_NY 20
 /** Number of references/measurements on the last (N + 1)st node. */
-#define ACADO_NYN 11
+#define ACADO_NYN 10
 /** Total number of QP optimization variables. */
 #define ACADO_QP_NV 120
 /** Number of integration steps per shooting interval. */
@@ -122,23 +122,23 @@ real_t u[ 120 ];
  */
 real_t od[ 273 ];
 
-/** Column vector of size: 420
+/** Column vector of size: 400
  * 
- *  Matrix containing 20 reference/measurement vectors of size 21 for first 20 nodes.
+ *  Matrix containing 20 reference/measurement vectors of size 20 for first 20 nodes.
  */
-real_t y[ 420 ];
+real_t y[ 400 ];
 
-/** Column vector of size: 11
+/** Column vector of size: 10
  * 
  *  Reference/measurement vector for the 21. node.
  */
-real_t yN[ 11 ];
+real_t yN[ 10 ];
 
-/** Matrix of size: 420 x 21 (row major format) */
-real_t W[ 8820 ];
+/** Matrix of size: 400 x 20 (row major format) */
+real_t W[ 8000 ];
 
-/** Matrix of size: 11 x 11 (row major format) */
-real_t WN[ 121 ];
+/** Matrix of size: 10 x 10 (row major format) */
+real_t WN[ 100 ];
 
 /** Column vector of size: 11
  * 
@@ -184,11 +184,11 @@ typedef struct ACADOworkspace_
 /** Column vector of size: 220 */
 real_t d[ 220 ];
 
-/** Column vector of size: 420 */
-real_t Dy[ 420 ];
+/** Column vector of size: 400 */
+real_t Dy[ 400 ];
 
-/** Column vector of size: 11 */
-real_t DyN[ 11 ];
+/** Column vector of size: 10 */
+real_t DyN[ 10 ];
 
 /** Matrix of size: 220 x 11 (row major format) */
 real_t evGx[ 2420 ];
@@ -202,26 +202,26 @@ real_t objAuxVar[ 276 ];
 /** Row vector of size: 30 */
 real_t objValueIn[ 30 ];
 
-/** Row vector of size: 378 */
-real_t objValueOut[ 378 ];
+/** Row vector of size: 360 */
+real_t objValueOut[ 360 ];
 
 /** Matrix of size: 220 x 11 (row major format) */
 real_t Q1[ 2420 ];
 
-/** Matrix of size: 220 x 21 (row major format) */
-real_t Q2[ 4620 ];
+/** Matrix of size: 220 x 20 (row major format) */
+real_t Q2[ 4400 ];
 
 /** Matrix of size: 120 x 6 (row major format) */
 real_t R1[ 720 ];
 
-/** Matrix of size: 120 x 21 (row major format) */
-real_t R2[ 2520 ];
+/** Matrix of size: 120 x 20 (row major format) */
+real_t R2[ 2400 ];
 
 /** Matrix of size: 11 x 11 (row major format) */
 real_t QN1[ 121 ];
 
-/** Matrix of size: 11 x 11 (row major format) */
-real_t QN2[ 121 ];
+/** Matrix of size: 11 x 10 (row major format) */
+real_t QN2[ 110 ];
 
 /** Column vector of size: 155 */
 real_t conAuxVar[ 155 ];

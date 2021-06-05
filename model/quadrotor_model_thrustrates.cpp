@@ -147,15 +147,13 @@ int main( ){
   h << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
-    << dummy
     << theta << radius << d_l << d_o_log_sqrt
     << T << w_x << w_y << w_z << alpha << slack;
 
   // End cost vector consists of all states (no inputs at last state).
   hN << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
-    << v_x << v_y << v_z
-    << dummy;
+    << v_x << v_y << v_z;
 
   // Running cost weight matrix
   DMatrix Q(h.getDim(), h.getDim());
@@ -170,17 +168,16 @@ int main( ){
   Q(7,7) = 10;    // vx
   Q(8,8) = 10;    // vy
   Q(9,9) = 10;    // vz
-  Q(10,10) = 0;  // dummy
+  Q(10,10) = 0;   // Cost on perception
   Q(11,11) = 0;   // Cost on perception
-  Q(12,12) = 0;   // Cost on perception
-  Q(13,13) = 0;   // Cost on distance to line
-  Q(14,14) = 0;   // Cost on distance to obstacle
-  Q(15,15) = 1;   // T
-  Q(16,16) = 1;   // wx
-  Q(17,17) = 1;   // wy
-  Q(18,18) = 1;   // wz
-  Q(19,19) = 1;   // alpha
-  Q(20,20) = 1;   // slack
+  Q(12,12) = 0;   // Cost on distance to line
+  Q(13,13) = 0;   // Cost on distance to obstacle
+  Q(14,14) = 1;   // T
+  Q(15,15) = 1;   // wx
+  Q(16,16) = 1;   // wy
+  Q(17,17) = 1;   // wz
+  Q(18,18) = 1;   // alpha
+  Q(19,19) = 1;   // slack
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -195,7 +192,6 @@ int main( ){
   QN(7,7) = Q(7,7);   // vx
   QN(8,8) = Q(8,8);   // vy
   QN(9,9) = Q(9,9);   // vz
-  QN(10,10) = 0;      // dummy
 
   // Set a reference for the analysis (if CODE_GEN is false).
   // Reference is at x = 2.0m in hover (qw = 1).

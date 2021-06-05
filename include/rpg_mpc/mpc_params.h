@@ -78,7 +78,6 @@ class MpcParams {
     quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_l", Q_dist_l, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_o", Q_dist_o, (T)0.0, pnh);
-    T Q_dummy = 0;
 
     // Check whether all state costs are positive.
     if(Q_pos_xy           <= 0.0 ||
@@ -116,7 +115,6 @@ class MpcParams {
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
-      Q_dummy, 
       Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha, R_slack).finished().asDiagonal();

@@ -76,7 +76,7 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static_assert(kStateSize == 11,
+  static_assert(kStateSize == 10,
                 "MpcController: Wrong model size. Number of states does not match.");
   static_assert(kInputSize == 6,
                 "MpcController: Wrong model size. Number of inputs does not match.");

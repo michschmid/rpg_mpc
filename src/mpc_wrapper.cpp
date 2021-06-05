@@ -42,8 +42,7 @@ MpcWrapper<T>::MpcWrapper()
   const Eigen::Matrix<T, kStateSize, 1> hover_state =
     (Eigen::Matrix<T, kStateSize, 1>() << 0.0, 0.0, 0.0,
                                           1.0, 0.0, 0.0, 0.0,
-                                          0.0, 0.0, 0.0,
-                                          0.0).finished();
+                                          0.0, 0.0, 0.0).finished();
 
   // Initialize states x and xN and input u.
   acado_initial_state_ = hover_state.template cast<float>();
