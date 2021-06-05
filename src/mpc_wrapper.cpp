@@ -181,7 +181,7 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
   lower_bounds << min_thrust,
     -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, 0.0, 0.0;
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate, 10.0, std::numeric_limits<T>::infinity;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, std::numeric_limits<T>::infinity, std::numeric_limits<T>::infinity;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();
