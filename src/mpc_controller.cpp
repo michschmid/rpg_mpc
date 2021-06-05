@@ -376,7 +376,7 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
   input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
                                           std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
 
-  ROS_INFO( "alpha = %f, slack = %f", input_bounded(INPUT::kAlpha), input_bounded(INPUT::kSlack));
+  ROS_INFO_THROTTLE(0.5,  "alpha = %f, slack = %f", input_bounded(INPUT::kAlpha), input_bounded(INPUT::kSlack));
 
   quadrotor_common::ControlCommand command;
 

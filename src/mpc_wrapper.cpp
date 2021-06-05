@@ -184,7 +184,7 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
   // TODO: this is the numerical value of acado INFTY not sure how to set it better
   // but the problem with the jumping slack variables still persists
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate, 1.0e12, 1.0e12;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, 10.0, 1.0e12;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();
@@ -192,7 +192,7 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
   acado_upper_bounds_ =
     upper_bounds.replicate(1, kSamples).template cast<float>();
   // std::cout << acado_inputs_ << "\n";
-  std::cout << acado_states_ << "\n";
+  // std::cout << acado_states_ << "\n";
   return true;
 }
 
@@ -270,7 +270,7 @@ bool MpcWrapper<T>::setTrajectory(
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();
-  std::cout << acado_reference_states_ << "\n";
+  // std::cout << acado_reference_states_ << "\n";
 
   acado_reference_end_state_.segment(0, kStateSize) =
     states.col(kSamples).template cast<float>();
