@@ -285,6 +285,8 @@ bool MpcController<T>::setStateEstimate(
   est_state_(kVelX) = state_estimate.velocity.x();
   est_state_(kVelY) = state_estimate.velocity.y();
   est_state_(kVelZ) = state_estimate.velocity.z();
+  est_state_(kDummy1) = 0;
+  est_state_(kDummy2) = 0;
   const bool quaternion_norm_ok = abs(est_state_.segment(kOriW, 4).norm() - 1.0) < 0.1;
   return quaternion_norm_ok;
 }

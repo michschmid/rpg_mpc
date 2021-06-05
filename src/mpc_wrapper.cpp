@@ -181,16 +181,18 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
   Eigen::Matrix<T, 6, 1> upper_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   lower_bounds << min_thrust,
     -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, 0.0, 0.0;
-  // TODO: setting a limit for alpha max not euqal to Inf will sometimes lead to odd behaviour
-  // alpha jumping between 0 and upper bound for no reason
+  // TODO: this is the numerical value of acado INFTY not sure how to set it better
+  // but the problem with the jumping slack variables still persists
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate, 10.0, std::numeric_limits<T>::infinity;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, 1.0e12, 1.0e12;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();
 
   acado_upper_bounds_ =
     upper_bounds.replicate(1, kSamples).template cast<float>();
+  // std::cout << acado_inputs_ << "\n";
+  std::cout << acado_states_ << "\n";
   return true;
 }
 

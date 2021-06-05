@@ -70,7 +70,6 @@ int main( ){
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
-  const double alpha_max = 10;
 
   // Bias to prevent division by zero.
   const double epsilon1 = 0.1;     // Camera projection recover bias [m]
@@ -88,10 +87,9 @@ int main( ){
   f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * T;
   f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * T;
   f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z;
-  f << dot(dummy_1) == alpha;
-  f << dot(dummy_2) == slack;
+  f << dot(dummy_1) == 0.00001 * alpha;
+  f << dot(dummy_2) == 0.00001 * slack;
 
-  IntermediateState alpha_frac = 1 - alpha/alpha_max;
 
   // Intermediate states to calculate point of interest projection!
   // IMPORTANT: This assumes the camera coordinate system to be oriented as in the paper (optical axis z, y down),
@@ -174,16 +172,16 @@ int main( ){
   Q(9,9) = 10;    // vz
   Q(10,10) = 0;   // dummy 1
   Q(11,11) = 0;   // dummy 2
-  Q(11,11) = 0;   // Cost on perception
   Q(12,12) = 0;   // Cost on perception
-  Q(13,13) = 0;   // Cost on distance to line
-  Q(14,14) = 0;   // Cost on distance to obstacle
-  Q(15,15) = 1;   // T
-  Q(16,16) = 1;   // wx
-  Q(17,17) = 1;   // wy
-  Q(18,18) = 1;   // wz
-  Q(19,19) = 1;   // alpha
-  Q(20,20) = 1;   // slack
+  Q(13,13) = 0;   // Cost on perception
+  Q(14,14) = 0;   // Cost on distance to line
+  Q(15,15) = 0;   // Cost on distance to obstacle
+  Q(16,16) = 1;   // T
+  Q(17,17) = 1;   // wx
+  Q(18,18) = 1;   // wy
+  Q(19,19) = 1;   // wz
+  Q(20,20) = 1;   // alpha
+  Q(21,21) = 1;   // slack
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -238,10 +236,10 @@ int main( ){
   ocp.subjectTo(-w_max_xy <= w_y <= w_max_xy);
   ocp.subjectTo(-w_max_yaw <= w_z <= w_max_yaw);
   ocp.subjectTo( T_min <= T <= T_max);
-  ocp.subjectTo( 0.0 <= alpha <= alpha_max);
+  ocp.subjectTo( 0.0 <= alpha);
   ocp.subjectTo( 0.0 <= slack);
   // Obstacle Chance constraint (delta = 0.05)
-  ocp.subjectTo(5*alpha_frac + (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
+  ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
   ocp.setNOD(13);
 

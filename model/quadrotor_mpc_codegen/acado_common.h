@@ -223,8 +223,8 @@ real_t QN1[ 144 ];
 /** Matrix of size: 12 x 10 (row major format) */
 real_t QN2[ 120 ];
 
-/** Column vector of size: 161 */
-real_t conAuxVar[ 161 ];
+/** Column vector of size: 156 */
+real_t conAuxVar[ 156 ];
 
 /** Row vector of size: 31 */
 real_t conValueIn[ 31 ];
