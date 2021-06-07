@@ -37,7 +37,7 @@ MpcController<T>::MpcController(
     timing_feedback_(T(1e-3)),
     timing_preparation_(T(1e-3)),
     est_state_((Eigen::Matrix<T, kStateSize, 1>() <<
-                                                  0, 0, 0, 1, 0, 0, 0, 0, 0, 0).finished()),
+                                                  0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0).finished()),
     reference_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
     reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples + 1>::Zero()),
     predicted_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
