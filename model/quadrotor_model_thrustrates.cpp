@@ -50,7 +50,8 @@ int main( ){
   // System variables
   DifferentialState     p_x, p_y, p_z;
   DifferentialState     q_w, q_x, q_y, q_z;
-  DifferentialState     v_x, v_y, v_z; 
+  DifferentialState     v_x, v_y, v_z;
+  DifferentialState     dummy_1, dummy_2; // workaround for https://github.com/acado/acado/issues/79
   Control               T, w_x, w_y, w_z;
   Control               alpha, slack;
   DifferentialEquation  f;
@@ -69,7 +70,6 @@ int main( ){
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
-  const double alpha_min = 0.0;
   const double alpha_max = 10;
 
   // Bias to prevent division by zero.
@@ -88,10 +88,12 @@ int main( ){
   f << dot(q_z) ==  0.5 * ( w_z * q_w + w_y * q_x - w_x * q_y);
   f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * T;
   f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * T;
-  f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z + 0.000000001 * alpha + + 0.000000001 * slack; // workaround for https://github.com/acado/acado/issues/79 
+  f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z;
+  f << dot(dummy_1) == 0.00001 * alpha;
+  f << dot(dummy_2) == 0.00001 * slack;
 
   // Optimization variable to trade-off between perception awareness and obstacle avoidance
-  IntermediateState alpha_frac = 1 - alpha/alpha_max;
+  IntermediateState alpha_frac = 1 - alpha/alpha_max; // TODO: not sure whether alpha_max is updated with bounds
 
   // Intermediate states to calculate point of interest projection!
   // IMPORTANT: This assumes the camera coordinate system to be oriented as in the paper (optical axis z, y down),
@@ -115,7 +117,7 @@ int main( ){
   // TODO: as edge case could still lead to a division by zero if v_norm2 - v_norm1 = - epsilon2, make sure this never happens!!
   theta = alpha_frac * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
   radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
-
+  
   // Distance from quadrotors position to powerline
   // TODO: the distance is unsigned! this might lead to a problem
   IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
@@ -150,6 +152,7 @@ int main( ){
   h << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
+    << dummy_1 << dummy_2
     << theta << radius << d_l << d_o_log_sqrt
     << T << w_x << w_y << w_z << alpha << slack;
 
@@ -157,7 +160,6 @@ int main( ){
   hN << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z;
-  //  << theta << radius << d_l << d_o_log_sqrt;
 
   // Running cost weight matrix
   DMatrix Q(h.getDim(), h.getDim());
@@ -172,16 +174,18 @@ int main( ){
   Q(7,7) = 10;    // vx
   Q(8,8) = 10;    // vy
   Q(9,9) = 10;    // vz
-  Q(10,10) = 0;   // Cost on perception
-  Q(11,11) = 0;   // Cost on perception
-  Q(12,12) = 0;   // Cost on distance to line
-  Q(13,13) = 0;   // Cost on distance to obstacle
-  Q(14,14) = 1;   // T
-  Q(15,15) = 1;   // wx
-  Q(16,16) = 1;   // wy
-  Q(17,17) = 1;   // wz
-  Q(18,18) = 1;   // alpha
-  Q(19,19) = 100;   // slack
+  Q(10,10) = 0;   // dummy 1
+  Q(11,11) = 0;   // dummy 2
+  Q(12,12) = 0;   // Cost on perception
+  Q(13,13) = 0;   // Cost on perception
+  Q(14,14) = 0;   // Cost on distance to line
+  Q(15,15) = 0;   // Cost on distance to obstacle
+  Q(16,16) = 1;   // T
+  Q(17,17) = 1;   // wx
+  Q(18,18) = 1;   // wy
+  Q(19,19) = 1;   // wz
+  Q(20,20) = 1;   // alpha
+  Q(21,21) = 1;   // slack
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -196,13 +200,6 @@ int main( ){
   QN(7,7) = Q(7,7);   // vx
   QN(8,8) = Q(8,8);   // vy
   QN(9,9) = Q(9,9);   // vz
-  // As there exist no slack variables and control can't be in the 
-  // terminal objective function the following is not working together
-  // with the slack variable alpha
-  // QN(10,10) = 0;  // Cost on perception
-  // QN(11,11) = 0;  // Cost on perception
-  // QN(12,12) = 0;  // Cost on distance to line
-  // QN(13,13) = 0;  // Cost on distance to obstacle
 
   // Set a reference for the analysis (if CODE_GEN is false).
   // Reference is at x = 2.0m in hover (qw = 1).
@@ -243,15 +240,11 @@ int main( ){
   ocp.subjectTo(-w_max_xy <= w_y <= w_max_xy);
   ocp.subjectTo(-w_max_yaw <= w_z <= w_max_yaw);
   ocp.subjectTo( T_min <= T <= T_max);
-  // constraint on slack variable
-  ocp.subjectTo( alpha_min <= alpha <= alpha_max);
+  ocp.subjectTo( 0.0 <= alpha <= alpha_max);
   ocp.subjectTo( 0.0 <= slack);
   // Obstacle Chance constraint (delta = 0.05)
-  const double factor = 1;
-  // ocp.subjectTo(factor*alpha_frac + 1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))+epsilon3) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
-  ocp.subjectTo(factor*alpha_frac - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) - slack <= 0);
-  // ocp.subjectTo(1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))+epsilon3) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
-  // ocp.subjectTo((5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
+  const double factor = 5;
+  ocp.subjectTo(factor*alpha_frac + 1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
   ocp.setNOD(13);
 

@@ -42,7 +42,8 @@ MpcWrapper<T>::MpcWrapper()
   const Eigen::Matrix<T, kStateSize, 1> hover_state =
     (Eigen::Matrix<T, kStateSize, 1>() << 0.0, 0.0, 0.0,
                                           1.0, 0.0, 0.0, 0.0,
-                                          0.0, 0.0, 0.0, 0.0).finished();
+                                          0.0, 0.0, 0.0,
+                                          0.0, 0.0).finished();
 
   // Initialize states x and xN and input u.
   acado_initial_state_ = hover_state.template cast<float>();
@@ -149,7 +150,7 @@ bool MpcWrapper<T>::setCosts(
 // Set the input limits.
 template <typename T>
 bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate, T min_alpha, T max_alpha)
+    T max_rollpitchrate, T max_yawrate, T max_alpha, T max_slack)
 {
   if(min_thrust <= 0.0 || min_thrust > max_thrust)
   {
@@ -175,26 +176,33 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
     return false;
   }
 
-  if(min_alpha < 0.0)
+  if(max_alpha <= 0.0)
   {
-    ROS_ERROR("MPC: Minimal soft-constraint value is not set properly, not changed.");
+    ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
     return false;
   }
 
+  if(max_slack <= 0.0)
+  {
+    ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
+    return false;
+  }
 
   // Set input boundaries.
   Eigen::Matrix<T, 6, 1> lower_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   Eigen::Matrix<T, 6, 1> upper_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   lower_bounds << min_thrust,
-    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, min_alpha, 0.0;
+    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, 0.0, 0.0;
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate, max_alpha, std::numeric_limits<T>::infinity();
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, max_alpha, max_slack;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();
 
   acado_upper_bounds_ =
     upper_bounds.replicate(1, kSamples).template cast<float>();
+  // std::cout << acado_inputs_ << "\n";
+  // std::cout << acado_states_ << "\n";
   return true;
 }
 
@@ -272,6 +280,7 @@ bool MpcWrapper<T>::setTrajectory(
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();
+  // std::cout << acado_reference_states_ << "\n";
 
   acado_reference_end_state_.segment(0, kStateSize) =
     states.col(kSamples).template cast<float>();

@@ -233,7 +233,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // float cc = (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
   float alpha = predicted_inputs_(kAlpha);
   float alpha_max = 10.0;
-  float factor = 1;
+  float factor = 5;
   float cc = factor*(1 - alpha/alpha_max) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
 
   ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
@@ -291,6 +291,8 @@ bool MpcController<T>::setStateEstimate(
   est_state_(kVelX) = state_estimate.velocity.x();
   est_state_(kVelY) = state_estimate.velocity.y();
   est_state_(kVelZ) = state_estimate.velocity.z();
+  est_state_(kDummy1) = 0;
+  est_state_(kDummy2) = 0;
   const bool quaternion_norm_ok = abs(est_state_.segment(kOriW, 4).norm() - 1.0) < 0.1;
   return quaternion_norm_ok;
 }
@@ -318,12 +320,15 @@ bool MpcController<T>::setReference(
         q_orientation.x(),
         q_orientation.y(),
         q_orientation.z(),
-        reference_trajectory.points.front().velocity.template cast<T>()
+        reference_trajectory.points.front().velocity.template cast<T>(), 
+        0.0, 0.0
     ).finished().replicate(1, kSamples + 1);
 
     acceleration << reference_trajectory.points.front().acceleration.template cast<T>() - gravity;
+    // TODO: it was here where the bug hiding for so long, make this clearer as it overwrites initialization
+    // not set fields are initialized to a potentially non-zero number
     reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() << acceleration.norm(),
-        reference_trajectory.points.front().bodyrates.template cast<T>()
+        reference_trajectory.points.front().bodyrates.template cast<T>(), 0.0, 0.0
     ).finished().replicate(1, kSamples + 1);
   } else {
     auto iterator(reference_trajectory.points.begin());
@@ -345,14 +350,15 @@ bool MpcController<T>::setReference(
           q_orientation.x(),
           q_orientation.y(),
           q_orientation.z(),
-          iterator->velocity.template cast<T>();
+          iterator->velocity.template cast<T>(),
+          0.0, 0.0;
       if (reference_states_.col(i).segment(kOriW, 4).dot(
           est_state_.segment(kOriW, 4)) < 0.0)
         reference_states_.block(kOriW, i, 4, 1) =
             -reference_states_.block(kOriW, i, 4, 1);
       acceleration << iterator->acceleration.template cast<T>() - gravity;
       reference_inputs_.col(i) << acceleration.norm(),
-          iterator->bodyrates.template cast<T>();
+          iterator->bodyrates.template cast<T>(), 0.0, 0.0;
       quaternion_norm_ok &= abs(est_state_.segment(kOriW, 4).norm() - 1.0) < 0.1;
     }
   }
@@ -375,13 +381,9 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
                                           std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
   input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
                                           std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
-  ROS_INFO_THROTTLE(0.5, "T = %f, x = %f, y = %f, z = %f, alpha = %f, slack = %f ", 
-           input_bounded(INPUT::kThrust), 
-           input_bounded(INPUT::kRateX), 
-           input_bounded(INPUT::kRateY), 
-           input_bounded(INPUT::kRateZ), 
-           input_bounded(INPUT::kAlpha), 
-           input_bounded(INPUT::kSlack));
+
+  ROS_INFO_THROTTLE(0.5,  "alpha = %f, slack = %f", input_bounded(INPUT::kAlpha), input_bounded(INPUT::kSlack));
+
   quadrotor_common::ControlCommand command;
 
   command.timestamp = time;
@@ -474,7 +476,7 @@ bool MpcController<T>::setNewParams(MpcParams<T>& params) {
   mpc_wrapper_.setLimits(
       params.min_thrust_, params.max_thrust_,
       params.max_bodyrate_xy_, params.max_bodyrate_z_, 
-      params.min_alpha_, params.max_alpha_);
+      params.max_alpha_, params.max_slack_);
   mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
   params.changed_ = false;
   return true;

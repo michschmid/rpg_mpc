@@ -47,8 +47,8 @@ class MpcParams {
     max_bodyrate_z_(0.0),
     min_thrust_(0.0),
     max_thrust_(0.0),
-    min_alpha_(0.0),
     max_alpha_(0.0),
+    max_slack_(0.0),
     p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
     q_B_C_(Eigen::Quaternion<T>(1.0, 0.0, 0.0, 0.0)),
     Q_(Eigen::Matrix<T, kCostSize, kCostSize>::Zero()),
@@ -80,6 +80,7 @@ class MpcParams {
     quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_l", Q_dist_l, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_o", Q_dist_o, (T)0.0, pnh);
+    T Q_dummy = 0.0;
 
     // Check whether all state costs are positive.
     if(Q_pos_xy           <= 0.0 ||
@@ -119,6 +120,7 @@ class MpcParams {
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
+      Q_dummy, Q_dummy, 
       Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha, R_slack).finished().asDiagonal();
@@ -134,16 +136,16 @@ class MpcParams {
     GET_PARAM_(max_bodyrate_z);
     GET_PARAM_(min_thrust);
     GET_PARAM_(max_thrust);
-    GET_PARAM_(min_alpha);
     GET_PARAM_(max_alpha);
+    GET_PARAM_(max_slack);
 
     // Check whether all input limits are positive.
     if(max_bodyrate_xy_ <= 0.0 ||
        max_bodyrate_z_  <= 0.0 ||
        min_thrust_      <= 0.0 ||
        max_thrust_      <= 0.0 ||
-       min_alpha_       <  0.0 ||
-       max_alpha_       <= 0.0)
+       max_alpha_       <= 0.0 ||
+       max_slack_       <= 0.0)
     {
       ROS_ERROR("MPC: All limits must be positive non-zero values!");
       return false;
@@ -194,8 +196,8 @@ class MpcParams {
   T max_bodyrate_z_;
   T min_thrust_;
   T max_thrust_;
-  T min_alpha_;
   T max_alpha_;
+  T max_slack_;
 
   Eigen::Matrix<T, 3, 1> p_B_C_;
   Eigen::Quaternion<T> q_B_C_;

@@ -57,7 +57,9 @@ enum STATE {
   kOriZ = 6,
   kVelX = 7,
   kVelY = 8,
-  kVelZ = 9
+  kVelZ = 9,
+  kDummy1 = 10, 
+  kDummy2 = 11
 };
 
 enum INPUT {
@@ -75,7 +77,7 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static_assert(kStateSize == 10,
+  static_assert(kStateSize == 12,
                 "MpcController: Wrong model size. Number of states does not match.");
   static_assert(kInputSize == 6,
                 "MpcController: Wrong model size. Number of inputs does not match.");
