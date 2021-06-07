@@ -150,7 +150,7 @@ bool MpcWrapper<T>::setCosts(
 // Set the input limits.
 template <typename T>
 bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate)
+    T max_rollpitchrate, T max_yawrate, T max_alpha, T max_slack)
 {
   if(min_thrust <= 0.0 || min_thrust > max_thrust)
   {
@@ -176,15 +176,25 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
     return false;
   }
 
+  if(max_alpha <= 0.0)
+  {
+    ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
+    return false;
+  }
+
+  if(max_slack <= 0.0)
+  {
+    ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
+    return false;
+  }
+
   // Set input boundaries.
   Eigen::Matrix<T, 6, 1> lower_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   Eigen::Matrix<T, 6, 1> upper_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   lower_bounds << min_thrust,
     -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, 0.0, 0.0;
-  // TODO: this is the numerical value of acado INFTY not sure how to set it better
-  // but the problem with the jumping slack variables still persists
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate, 10.0, 1.0e12;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, max_alpha, max_slack;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();

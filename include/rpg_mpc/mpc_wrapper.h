@@ -62,7 +62,7 @@ class MpcWrapper
     const T state_cost_scaling = 0.0, const T input_cost_scaling = 0.0);
 
   bool setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate);
+    T max_rollpitchrate, T max_yawrate, T max_alpha, T max_slack);
   bool setCameraParameters(
     const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
     Eigen::Quaternion<T>& q_B_C);

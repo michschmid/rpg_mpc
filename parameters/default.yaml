@@ -49,6 +49,9 @@ max_bodyrate_xy:    3.0       # ~ pi [rad/s]
 max_bodyrate_z:     2         # ~ pi*2/3 [rad/s]
 min_thrust:         2.0       # ~ 20% gravity [N]
 max_thrust:         20.0      # ~ 200% gravity [N]
+# Limits for slack variables
+max_alpha: 10
+max_slack: 1.0e+12 # numerical value of acado INFTY
 
 # Extrinsics for Perception Aware MPC
 p_B_C:      [ 0.0, 0.0, 0.0 ]               # camera in body center [m]

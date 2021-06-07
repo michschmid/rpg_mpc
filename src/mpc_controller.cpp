@@ -469,7 +469,8 @@ bool MpcController<T>::setNewParams(MpcParams<T>& params) {
   mpc_wrapper_.setCosts(params.Q_, params.R_);
   mpc_wrapper_.setLimits(
       params.min_thrust_, params.max_thrust_,
-      params.max_bodyrate_xy_, params.max_bodyrate_z_);
+      params.max_bodyrate_xy_, params.max_bodyrate_z_, 
+      params.max_alpha_, params.max_slack_);
   mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
   params.changed_ = false;
   return true;
