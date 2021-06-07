@@ -53,7 +53,7 @@ MpcController<T>::MpcController(
 
   sub_point_of_interest_ = nh_.subscribe("/line_poi", 1,
                                          &MpcController<T>::pointOfInterestCallback, this);
-  sub_obstacles_ = nh_.subscribe("/obstacles", 1, &MpcController<T>::obstacleCallback, this);
+  sub_obstacle_ = nh_.subscribe("/obstacle", 1, &MpcController<T>::obstacleCallback, this);
   sub_autopilot_off_ = nh_.subscribe("autopilot/off", 1,
                                      &MpcController<T>::offCallback, this);
 
@@ -98,15 +98,16 @@ void MpcController<T>::pointOfInterestCallback(
 
 template<typename T>
 void MpcController<T>::obstacleCallback(
-  const vision_node::ObstacleArray::ConstPtr& msg)
+  const vision_node::Obstacle::ConstPtr& msg)
 {
-  // Assumes the messages being ordered with the first obstacle being the closest
-  obstacle_(0) = msg->obstacles[0].translation.x;
-  obstacle_(1) = msg->obstacles[0].translation.y;
-  obstacle_(2) = msg->obstacles[0].translation.z;
-  obstacle_(3) = msg->obstacles[0].dimensions.x;
-  obstacle_(4) = msg->obstacles[0].dimensions.y;
-  obstacle_(5) = msg->obstacles[0].dimensions.z;
+  // Assumes this is the closest obstacle with axis oriented
+  // bounding ellipsoid
+  obstacle_(0) = msg->translation.x;
+  obstacle_(1) = msg->translation.y;
+  obstacle_(2) = msg->translation.z;
+  obstacle_(3) = msg->dimensions.x;
+  obstacle_(4) = msg->dimensions.y;
+  obstacle_(5) = msg->dimensions.z;
   // TODO: implement rotation
   mpc_wrapper_.setObstacle(obstacle_);
 }
