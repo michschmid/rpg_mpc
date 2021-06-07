@@ -100,19 +100,14 @@ template<typename T>
 void MpcController<T>::obstacleCallback(
   const vision_node::ObstacleArray::ConstPtr& msg)
 {
-  // TODO: find closest obstacle here and check max distance (80 m)
-  const double p_o_x = 0.0;
-  const double p_o_y = 10.0;
-  const double p_o_z = 15.0;
-  const double a_o = 1.0;
-  const double b_o = 0.5;
-  const double c_o = 2.0;
-  obstacle_(0) = p_o_x;
-  obstacle_(1) = p_o_y;
-  obstacle_(2) = p_o_y;
-  obstacle_(3) = a_o;
-  obstacle_(4) = b_o;
-  obstacle_(5) = c_o;
+  // Assumes the messages being ordered with the first obstacle being the closest
+  obstacle_(0) = msg->obstacles[0].translation.x;
+  obstacle_(1) = msg->obstacles[0].translation.y;
+  obstacle_(2) = msg->obstacles[0].translation.z;
+  obstacle_(3) = msg->obstacles[0].dimensions.x;
+  obstacle_(4) = msg->obstacles[0].dimensions.y;
+  obstacle_(5) = msg->obstacles[0].dimensions.z;
+  // TODO: implement rotation
   mpc_wrapper_.setObstacle(obstacle_);
 }
 
