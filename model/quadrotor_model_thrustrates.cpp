@@ -60,7 +60,6 @@ int main( ){
   OnlineData            t_B_C_x, t_B_C_y, t_B_C_z;
   OnlineData            q_B_C_w, q_B_C_x, q_B_C_y, q_B_C_z;
   OnlineData            p_o_x, p_o_y, p_o_z, a_o, b_o, c_o;
-  OnlineData            q_W_O_w, q_W_O_x, q_W_O_y, q_W_O_z;
 
   // Parameters with exemplary values. These are set/overwritten at runtime.
   const double t_start = 0.0;     // Initial time [s]
@@ -149,20 +148,6 @@ int main( ){
   IntermediateState n_o_x = (p_x - p_o_x) / dp_norm;
   IntermediateState n_o_y = (p_y - p_o_y) / dp_norm;
   IntermediateState n_o_z = (p_z - p_o_z) / dp_norm;
-  // Quaternion to rotation matrix
-  IntermediateState R_W_O_11 = 2*q_W_O_w*q_W_O_w + 2*q_W_O_x*q_W_O_x - 1;
-  IntermediateState R_W_O_12 = 2*q_W_O_x*q_W_O_y - 2*q_W_O_w*q_W_O_z;
-  IntermediateState R_W_O_13 = 2*q_W_O_w*q_W_O_y + 2*q_W_O_x*q_W_O_z;
-  IntermediateState R_W_O_21 = 2*q_W_O_w*q_W_O_z + 2*q_W_O_x*q_W_O_y;
-  IntermediateState R_W_O_22 = 2*q_W_O_w*q_W_O_w + 2*q_W_O_y*q_W_O_y - 1;
-  IntermediateState R_W_O_23 = 2*q_W_O_y*q_W_O_z - 2*q_W_O_w*q_W_O_x;
-  IntermediateState R_W_O_31 = 2*q_W_O_x*q_W_O_z - 2*q_W_O_w*q_W_O_y;
-  IntermediateState R_W_O_32 = 2*q_W_O_w*q_W_O_x + 2*q_W_O_y*q_W_O_z;
-  IntermediateState R_W_O_33 = 2*q_W_O_w*q_W_O_w + 2*q_W_O_z*q_W_O_z - 1;
-  // Chance constraint helper (delta = 0.05)
-  IntermediateState cc_leftside = (p_x - p_o_x)*(n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (p_y - p_o_y)*(n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (p_z - p_o_z)*(n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) - 1;
-  IntermediateState cc_rightside = 1.163087*sqrt(2)*sqrt((n_o_x*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_y*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_z*((sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2);
-  const double factor = 5;
 
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.
@@ -259,10 +244,11 @@ int main( ){
   ocp.subjectTo( T_min <= T <= T_max);
   ocp.subjectTo( 0.0 <= alpha <= alpha_max);
   ocp.subjectTo( 0.0 <= slack);
-  // Obstacle chance constraint 
-  ocp.subjectTo(factor*alpha_frac + cc_rightside - cc_leftside <= 0);
+  // Obstacle Chance constraint (delta = 0.05)
+  const double factor = 5;
+  ocp.subjectTo(factor*alpha_frac + 1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
-  ocp.setNOD(23);
+  ocp.setNOD(19);
 
 
   if(!CODE_GEN)

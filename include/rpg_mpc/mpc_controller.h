@@ -167,7 +167,7 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   Eigen::Matrix<T, kInputSize, kSamples> predicted_inputs_;
   Eigen::Matrix<T, kOdSize, 1> online_data_check_;
   Eigen::Matrix<T, 6, 1> point_of_interest_;
-  Eigen::Matrix<T, 10, 1> obstacle_;
+  Eigen::Matrix<T, 6, 1> obstacle_;
 };
 
 
