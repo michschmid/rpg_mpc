@@ -95,8 +95,8 @@ MpcWrapper<T>::MpcWrapper()
 
   // Initialize obstacle to a far away point with small size
   // IMPORTANT: can't be too far away as exp in logistic cost on distance would overflow
-  Eigen::Matrix<T, 6, 1> obstacle;
-  obstacle << 50, 50, 50, 0.01, 0.01, 0.01;
+  Eigen::Matrix<T, 10, 1> obstacle;
+  obstacle << 50, 50, 50, 0.01, 0.01, 0.01, 1, 0, 0, 0;
   setObstacle(obstacle);
 
   setPointOfInterest(point_of_interest);
@@ -241,19 +241,26 @@ bool MpcWrapper<T>::setPointOfInterest(
 
 template <typename T>
 bool MpcWrapper<T>::setObstacle(
-  const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& obstacle)
+  const Eigen::Ref<const Eigen::Matrix<T, 10, 1>>& obstacle)
 {
   // Check that obstacle is not to far away and causes overflow 
   T exp_check = exp(sqrt((acado_states_(0) - obstacle(0))*(acado_states_(0) - obstacle(0)) + (acado_states_(1) - obstacle(1))*(acado_states_(1) - obstacle(1))));
-  // Corresponding to acado INFINITY (not sure how to include this properly) and a safety margin
+  // Check that all dimensions are positive
+  bool dimensions_positive = obstacle(3) > 0 && obstacle(4) > 0 && obstacle(5) > 0;
+  // 1.0e+53 Corresponding to acado INFINITY (not sure how to include this properly) and a safety margin
   if (exp_check > 1.0e+53 / 100.0)
   {
     ROS_ERROR("Tried to set an obstacle to far away. Would cause overflow. Ignoring.");
     return false;
   }
+  else if (!dimensions_positive)
+  {
+    ROS_ERROR("Tried to set an obstacle ellipsoid with non-positive half axis. Ignoring.");
+    return false;
+  }
   else
   {
-    acado_online_data_.block(13, 0, 6, ACADO_N+1)
+    acado_online_data_.block(13, 0, 10, ACADO_N+1)
       = obstacle.replicate(1, ACADO_N+1).template cast<float>();
     return true;
   }
