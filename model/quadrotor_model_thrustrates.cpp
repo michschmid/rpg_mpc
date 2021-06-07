@@ -59,6 +59,7 @@ int main( ){
   OnlineData            p_F1_x, p_F1_y, p_F1_z, p_F2_x, p_F2_y, p_F2_z;
   OnlineData            t_B_C_x, t_B_C_y, t_B_C_z;
   OnlineData            q_B_C_w, q_B_C_x, q_B_C_y, q_B_C_z;
+  OnlineData            p_o_x, p_o_y, p_o_z, a_o, b_o, c_o;
 
   // Parameters with exemplary values. These are set/overwritten at runtime.
   const double t_start = 0.0;     // Initial time [s]
@@ -75,7 +76,7 @@ int main( ){
   // Bias to prevent division by zero.
   const double epsilon1 = 0.1;     // Camera projection recover bias [m]
   const double epsilon2 = 0.001;   // Cartesian to polar conversion bias [m]
-  const double epsilon3 = 0.001; // Bias for sqrt
+  const double epsilon3 = 0.001;   // Bias for sqrt
 
 
   // System Dynamics
@@ -123,12 +124,13 @@ int main( ){
   IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
 
   // Obstacle for prototyping
-  const double p_o_x = 0.0;
-  const double p_o_y = 10.0;
-  const double p_o_z = 15.0;
-  const double a_o = 1.0;
-  const double b_o = 0.5;
-  const double c_o = 2.0;
+  // const double p_o_x = 0.0;
+  // const double p_o_y = 10.0;
+  // const double p_o_z = 15.0;
+  // const double a_o = 1.0;
+  // const double b_o = 0.5;
+  // const double c_o = 2.0;
+  // Quadrotor radius
   const double r_o = 0.4;
   // Fix covariance
   const double so = 0.001;
@@ -246,7 +248,7 @@ int main( ){
   const double factor = 5;
   ocp.subjectTo(factor*alpha_frac + 1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) <= 0);
 
-  ocp.setNOD(13);
+  ocp.setNOD(19);
 
 
   if(!CODE_GEN)

@@ -82,6 +82,8 @@ MpcWrapper<T>::MpcWrapper()
   // Initialize online data.
   Eigen::Matrix<T, 3, 1> p_B_C(0, 0, 0);
   Eigen::Quaternion<T> q_B_C(1, 0, 0, 0);
+  setCameraParameters(p_B_C, q_B_C);
+
   // IMPORTANT: The initial point of interest can blow up everything depending on the orientation of the camera
   // It should ideally lead to a (0, 0) projection in the beginning.
   // Also remember it is set in world coordinates.
@@ -91,8 +93,12 @@ MpcWrapper<T>::MpcWrapper()
   point_of_interest << 2, 0, 13, 4, 0.01, 13;
   // point_of_interest << -1000, 0, 0, -1000, 0;
 
-  setCameraParameters(p_B_C, q_B_C);
-  // TODO: ad a warning in this method if this would lead to a NaN value
+  // Initialize obstacle to a far away point with small size
+  // IMPORTANT: can't be too far away as exp in logistic cost on distance would overflow
+  Eigen::Matrix<T, 6, 1> obstacle;
+  obstacle << 50, 50, 50, 0.01, 0.01, 0.01;
+  setObstacle(obstacle);
+
   setPointOfInterest(point_of_interest);
 
   // Initialize solver.
@@ -233,6 +239,26 @@ bool MpcWrapper<T>::setPointOfInterest(
   return true;
 }
 
+template <typename T>
+bool MpcWrapper<T>::setObstacle(
+  const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& obstacle)
+{
+  // Check that obstacle is not to far away and causes overflow 
+  T exp_check = exp(sqrt((acado_states_(0) - obstacle(0))*(acado_states_(0) - obstacle(0)) + (acado_states_(1) - obstacle(1))*(acado_states_(1) - obstacle(1))));
+  // Corresponding to acado INFINITY (not sure how to include this properly) and a safety margin
+  if (exp_check > 1.0e+53 / 100.0)
+  {
+    ROS_ERROR("Tried to set an obstacle to far away. Would cause overflow. Ignoring.");
+    return false;
+  }
+  else
+  {
+    acado_online_data_.block(13, 0, 6, ACADO_N+1)
+      = obstacle.replicate(1, ACADO_N+1).template cast<float>();
+    return true;
+  }
+}
+
 // Set a reference pose.
 template <typename T>
 bool MpcWrapper<T>::setReferencePose(
@@ -280,7 +306,7 @@ bool MpcWrapper<T>::setTrajectory(
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();
-  // std::cout << acado_reference_states_ << "\n";
+  // std::cout << acado_inputs_ << "\n";
 
   acado_reference_end_state_.segment(0, kStateSize) =
     states.col(kSamples).template cast<float>();

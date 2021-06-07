@@ -40,6 +40,7 @@
 #include <std_msgs/Empty.h>
 #include <std_msgs/Float32.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
+#include <vision_node/ObstacleArray.h>
 
 #include "rpg_mpc/mpc_wrapper.h"
 #include "rpg_mpc/mpc_params.h"
@@ -104,6 +105,9 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   void pointOfInterestCallback(
      const geometry_msgs::PoseArray::ConstPtr& msg);
 
+  void obstacleCallback(
+    const vision_node::ObstacleArray::ConstPtr& msg);
+
   void offCallback(const std_msgs::Empty::ConstPtr& msg);
 
   bool setStateEstimate(
@@ -136,6 +140,7 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   // Subscribers and publisher.
   ros::Subscriber sub_point_of_interest_;
   ros::Subscriber sub_autopilot_off_;
+  ros::Subscriber sub_obstacles_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_trajectory_;
   ros::Publisher pub_angle_;
@@ -162,6 +167,7 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   Eigen::Matrix<T, kInputSize, kSamples> predicted_inputs_;
   Eigen::Matrix<T, kOdSize, 1> online_data_check_;
   Eigen::Matrix<T, 6, 1> point_of_interest_;
+  Eigen::Matrix<T, 6, 1> obstacle_;
 };
 
 

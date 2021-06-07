@@ -42,7 +42,8 @@ MpcController<T>::MpcController(
     reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples + 1>::Zero()),
     predicted_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
     predicted_inputs_(Eigen::Matrix<T, kInputSize, kSamples>::Zero()),
-    point_of_interest_(Eigen::Matrix<T, 6, 1>::Zero()) {
+    point_of_interest_(Eigen::Matrix<T, 6, 1>::Zero()),
+    obstacle_(Eigen::Matrix<T, 6, 1>::Zero()) {
   pub_predicted_trajectory_ =
       nh_.advertise<nav_msgs::Path>(topic, 1);
   pub_reference_trajectory_ =
@@ -52,10 +53,9 @@ MpcController<T>::MpcController(
 
   sub_point_of_interest_ = nh_.subscribe("/line_poi", 1,
                                          &MpcController<T>::pointOfInterestCallback, this);
+  sub_obstacles_ = nh_.subscribe("/obstacles", 1, &MpcController<T>::obstacleCallback, this);
   sub_autopilot_off_ = nh_.subscribe("autopilot/off", 1,
                                      &MpcController<T>::offCallback, this);
-
-                        
 
   cost_serv_ = nh_.advertiseService("set_perception_cost", &MpcController<T>::setPerceptionCost, this);
 
@@ -94,6 +94,26 @@ void MpcController<T>::pointOfInterestCallback(
   // ROS_INFO("======================DEBUG===========================");
   // ROS_INFO("x1: %f, y1: %f, z1: %f, x2: %f, y2: %f, z2: %f ", point_of_interest_(0), point_of_interest_(1), point_of_interest_(2), point_of_interest_(3), point_of_interest_(4), point_of_interest_(5));
   // ROS_INFO("======================DEBUG===========================");
+}
+
+template<typename T>
+void MpcController<T>::obstacleCallback(
+  const vision_node::ObstacleArray::ConstPtr& msg)
+{
+  // TODO: find closest obstacle here and check max distance (80 m)
+  const double p_o_x = 0.0;
+  const double p_o_y = 10.0;
+  const double p_o_z = 15.0;
+  const double a_o = 1.0;
+  const double b_o = 0.5;
+  const double c_o = 2.0;
+  obstacle_(0) = p_o_x;
+  obstacle_(1) = p_o_y;
+  obstacle_(2) = p_o_y;
+  obstacle_(3) = a_o;
+  obstacle_(4) = b_o;
+  obstacle_(5) = c_o;
+  mpc_wrapper_.setObstacle(obstacle_);
 }
 
 template<typename T>
@@ -217,12 +237,12 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float d = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
 
   // Chance constraint
-  const double p_o_x = 0.0;
-  const double p_o_y = 10.0;
-  const double p_o_z = 15.0;
-  const double a_o = 1.0;
-  const double b_o = 0.5;
-  const double c_o = 2.0;
+  double p_o_x = obstacle_(0);
+  double p_o_y = obstacle_(1);
+  double p_o_z = obstacle_(2);
+  double a_o = obstacle_(3);
+  double b_o = obstacle_(4);
+  double c_o = obstacle_(5);
   const double r_o = 0.4;
   const double so = 0.001;
   const double sb = 0.001;
