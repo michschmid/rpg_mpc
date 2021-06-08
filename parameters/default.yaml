@@ -37,7 +37,7 @@ R_yaw:        1     # Cost on yaw rate
 
 # Cost on slack variables
 R_alpha: 1
-R_slack: 1
+R_slack: 1000
 
 # Exponential scaling: W_i = W * exp(-i/N * cost_scaling).
 # cost_scaling = 0 means no scaling W_i = W. 

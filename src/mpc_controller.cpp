@@ -50,6 +50,7 @@ MpcController<T>::MpcController(
       nh_.advertise<nav_msgs::Path>("mpc/trajectory_reference", 1);
   pub_angle_ = nh_.advertise<std_msgs::Float32>("mpc/projection_angle", 1);
   pub_radius_ = nh_.advertise<std_msgs::Float32>("mpc/projection_radius", 1);
+  pub_alpha_ = nh_.advertise<std_msgs::Float32>("mpc/alpha", 1);
 
   sub_point_of_interest_ = nh_.subscribe("/line_poi", 1,
                                          &MpcController<T>::pointOfInterestCallback, this);
@@ -249,7 +250,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // float cc = (5238078871897681*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))))/4503599627370496 - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
   float alpha = predicted_inputs_(kAlpha);
   float alpha_max = 10.0;
-  float factor = 5;
+  float factor = 10.0;
   float cc = factor*(1 - alpha/alpha_max) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1);
 
   ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
@@ -270,12 +271,15 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   publishReference(reference_states_, call_time);
   // Publish the projection for debugging and visualization
   // TODO: This can be done better by retrieving the full state x of the acado variables
-  // std_msgs::Float32 msg_angle;
-  // msg_angle.data = theta;
-  // pub_angle_.publish(msg_angle);
-  // std_msgs::Float32 msg_radius;
-  // msg_radius.data = radius;
-  // pub_radius_.publish(msg_radius);
+  std_msgs::Float32 msg_angle;
+  msg_angle.data = theta;
+  pub_angle_.publish(msg_angle);
+  std_msgs::Float32 msg_radius;
+  msg_radius.data = radius;
+  pub_radius_.publish(msg_radius);
+  std_msgs::Float32 msg_alpha;
+  msg_alpha.data = predicted_inputs_(kAlpha);
+  pub_alpha_.publish(msg_alpha);
 
   // Start a thread to prepare for the next execution.
   preparation_thread_ = std::thread(&MpcController<T>::preparationThread, this);
