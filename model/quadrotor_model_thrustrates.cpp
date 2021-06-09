@@ -245,7 +245,7 @@ int main( ){
   ocp.subjectTo( 0.0 <= alpha <= alpha_max);
   ocp.subjectTo( 0.0 <= slack);
   // Obstacle Chance constraint (delta = 0.05)
-  const double factor = 10;
+  const double factor = 2;
   ocp.subjectTo(factor*alpha_frac + 1.163087*sqrt(2)*sqrt((n_o_x*n_o_x*(sb + so))/((a_o + r_o)*(a_o + r_o)) + (n_o_y*n_o_y*(sb + so))/((b_o + r_o)*(b_o + r_o)) + (n_o_z*n_o_z*(sb + so))/((c_o + r_o)*(c_o + r_o))) - (n_o_x*1/(a_o + r_o)*(p_x - p_o_x) + n_o_y*1/(b_o + r_o)*(p_y - p_o_y) + n_o_z*1/(c_o + r_o)*(p_z - p_o_z) - 1) - slack <= 0);
 
   ocp.setNOD(19);

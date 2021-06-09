@@ -163,7 +163,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // Could not find a way to output acado intermediateState, therefore redo here for debugging
   // mpc_wrapper_.getReferenceState(1, reference_state_check_);
   // ROS_INFO("DEBUG: u_ref = %f , v_ref = %f", reference_state_check_[14], reference_state_check_[14]);
-  // mpc_wrapper_.getOnlineData(online_data_check_);
+  mpc_wrapper_.getOnlineData(online_data_check_);
   // ROS_INFO("DEBUG: test = %f", online_data_check_[0]);
   const double epsilon = 0.1; 
   // States
@@ -217,19 +217,11 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // TODO: maybe handle case when two points are identical, e.g. origin when initialized
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);
 
+  const double epsilon2 = 0.001; 
   // Calculate polar representation
   float theta, radius;
-  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1)/ (v_norm2 - v_norm1)));
-  // theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
-  // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));
-
-  // theta = std::atan2(-(u_norm2 - u_norm1), (v_norm2 - v_norm1));
-  // if ((u_norm2 - u_norm1) == 0){
-  //   r = 0;
-  // }else{
-  //   r = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * std::sin(std::atan2(-(u_norm2 - u_norm1), (v_norm2 - v_norm1)));
-  // }
+  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
+  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
 
   float d = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
 
@@ -255,7 +247,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
 
   ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
-  // ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
+  ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);
 
   // ROS_INFO_THROTTLE(0.5, "DEBUG: Sx1 = %f, Sy1 = %f, Sz1 = %f", intSx1, intSy1, intSz1);
@@ -498,6 +490,7 @@ bool MpcController<T>::setNewParams(MpcParams<T>& params) {
       params.max_bodyrate_xy_, params.max_bodyrate_z_, 
       params.max_alpha_, params.max_slack_);
   mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
+  mpc_wrapper_.setReferenceDistance(params.reference_distance_);
   params.changed_ = false;
   return true;
 }

@@ -61,7 +61,7 @@ MpcWrapper<T>::MpcWrapper()
     Eigen::Matrix<float, 2, kSamples>::Zero();
   // Distance 
   acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
-    (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << 1).finished().replicate(1, kSamples);
+    (Eigen::Matrix<float, 1, 1>() << 1).finished().replicate(1, kSamples);
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
@@ -229,6 +229,15 @@ bool MpcWrapper<T>::setCameraParameters(
   return true;
 }
 
+// Set reference distance body to powerline
+template <typename T>
+bool MpcWrapper<T>::setReferenceDistance(const T reference_distance)
+{
+  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
+    (Eigen::Matrix<float, 1, 1>() << static_cast<float>(reference_distance)).finished().replicate(1, kSamples);
+  return true;
+}
+
 // Set the point of interest. Perception cost should be non-zero.
 template <typename T>
 bool MpcWrapper<T>::setPointOfInterest(
@@ -270,9 +279,6 @@ bool MpcWrapper<T>::setReferencePose(
   acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
     Eigen::Matrix<float, 2, kSamples>::Zero();
 
-  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
-    (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << 1).finished().replicate(1, kSamples);
-
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
 
@@ -300,9 +306,6 @@ bool MpcWrapper<T>::setTrajectory(
 
   acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
     Eigen::Matrix<float, 2, kSamples>::Zero();
-
-  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
-    (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << 1).finished().replicate(1, kSamples);
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();
