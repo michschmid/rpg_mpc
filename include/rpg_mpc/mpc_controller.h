@@ -140,11 +140,12 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   // Subscribers and publisher.
   ros::Subscriber sub_point_of_interest_;
   ros::Subscriber sub_autopilot_off_;
-  ros::Subscriber sub_obstacles_;
+  ros::Subscriber sub_obstacle_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_trajectory_;
   ros::Publisher pub_angle_;
   ros::Publisher pub_radius_;
+  ros::Publisher pub_alpha_;
   ros::ServiceServer cost_serv_;
 
   // Parameters

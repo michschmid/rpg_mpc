@@ -66,6 +66,7 @@ class MpcWrapper
   bool setCameraParameters(
     const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
     Eigen::Quaternion<T>& q_B_C);
+  bool setReferenceDistance(const T reference_distance);
   bool setPointOfInterest(
     const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& position);
   bool setObstacle(

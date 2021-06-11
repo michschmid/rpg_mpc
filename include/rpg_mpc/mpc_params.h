@@ -151,6 +151,9 @@ class MpcParams {
       return false;
     }
 
+    // Read the body to line reference distance
+    GET_PARAM_(reference_distance);
+
     // Optional parameters
     std::vector<T> p_B_C(3), q_B_C(4);
     if(!pnh.getParam("p_B_C", p_B_C))
@@ -198,6 +201,8 @@ class MpcParams {
   T max_thrust_;
   T max_alpha_;
   T max_slack_;
+
+  T reference_distance_;
 
   Eigen::Matrix<T, 3, 1> p_B_C_;
   Eigen::Quaternion<T> q_B_C_;

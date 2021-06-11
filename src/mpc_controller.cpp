@@ -51,10 +51,11 @@ MpcController<T>::MpcController(
       nh_.advertise<nav_msgs::Path>("mpc/trajectory_reference", 1);
   pub_angle_ = nh_.advertise<std_msgs::Float32>("mpc/projection_angle", 1);
   pub_radius_ = nh_.advertise<std_msgs::Float32>("mpc/projection_radius", 1);
+  pub_alpha_ = nh_.advertise<std_msgs::Float32>("mpc/alpha", 1);
 
   sub_point_of_interest_ = nh_.subscribe("/line_poi", 1,
                                          &MpcController<T>::pointOfInterestCallback, this);
-  sub_obstacles_ = nh_.subscribe("/obstacle", 1, &MpcController<T>::obstacleCallback, this);
+  sub_obstacle_ = nh_.subscribe("/obstacle", 1, &MpcController<T>::obstacleCallback, this);
   sub_autopilot_off_ = nh_.subscribe("autopilot/off", 1,
                                      &MpcController<T>::offCallback, this);
 
@@ -221,10 +222,11 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // TODO: maybe handle case when two points are identical, e.g. origin when initialized
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);
 
+  const double epsilon2 = 0.001; 
   // Calculate polar representation
   float theta, radius;
-  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * sin(atan(-(u_norm2 - u_norm1)/ (v_norm2 - v_norm1)));
+  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
+  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
 
   float d = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
 
@@ -287,12 +289,15 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   publishReference(reference_states_, call_time);
   // Publish the projection for debugging and visualization
   // TODO: This can be done better by retrieving the full state x of the acado variables
-  // std_msgs::Float32 msg_angle;
-  // msg_angle.data = theta;
-  // pub_angle_.publish(msg_angle);
-  // std_msgs::Float32 msg_radius;
-  // msg_radius.data = radius;
-  // pub_radius_.publish(msg_radius);
+  std_msgs::Float32 msg_angle;
+  msg_angle.data = theta;
+  pub_angle_.publish(msg_angle);
+  std_msgs::Float32 msg_radius;
+  msg_radius.data = radius;
+  pub_radius_.publish(msg_radius);
+  std_msgs::Float32 msg_alpha;
+  msg_alpha.data = predicted_inputs_(kAlpha);
+  pub_alpha_.publish(msg_alpha);
 
   // Start a thread to prepare for the next execution.
   preparation_thread_ = std::thread(&MpcController<T>::preparationThread, this);
@@ -511,6 +516,7 @@ bool MpcController<T>::setNewParams(MpcParams<T>& params) {
       params.max_bodyrate_xy_, params.max_bodyrate_z_, 
       params.max_alpha_, params.max_slack_);
   mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
+  mpc_wrapper_.setReferenceDistance(params.reference_distance_);
   params.changed_ = false;
   return true;
 }
