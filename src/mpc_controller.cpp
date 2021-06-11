@@ -54,7 +54,7 @@ MpcController<T>::MpcController(
 
   sub_point_of_interest_ = nh_.subscribe("/line_poi", 1,
                                          &MpcController<T>::pointOfInterestCallback, this);
-  sub_obstacles_ = nh_.subscribe("/obstacles", 1, &MpcController<T>::obstacleCallback, this);
+  sub_obstacles_ = nh_.subscribe("/obstacle", 1, &MpcController<T>::obstacleCallback, this);
   sub_autopilot_off_ = nh_.subscribe("autopilot/off", 1,
                                      &MpcController<T>::offCallback, this);
 
@@ -99,19 +99,19 @@ void MpcController<T>::pointOfInterestCallback(
 
 template<typename T>
 void MpcController<T>::obstacleCallback(
-  const vision_node::ObstacleArray::ConstPtr& msg)
+  const vision_node::Obstacle::ConstPtr& msg)
 {
   // Assumes the messages being ordered with the first obstacle being the closest
-  obstacle_(0) = msg->obstacles[0].translation.x;
-  obstacle_(1) = msg->obstacles[0].translation.y;
-  obstacle_(2) = msg->obstacles[0].translation.z;
-  obstacle_(3) = msg->obstacles[0].dimensions.x;
-  obstacle_(4) = msg->obstacles[0].dimensions.y;
-  obstacle_(5) = msg->obstacles[0].dimensions.z;
-  obstacle_(6) = msg->obstacles[0].rotation.w;
-  obstacle_(7) = msg->obstacles[0].rotation.x;
-  obstacle_(8) = msg->obstacles[0].rotation.y;
-  obstacle_(9) = msg->obstacles[0].rotation.z;
+  obstacle_(0) = msg->translation.x;
+  obstacle_(1) = msg->translation.y;
+  obstacle_(2) = msg->translation.z;
+  obstacle_(3) = msg->dimensions.x;
+  obstacle_(4) = msg->dimensions.y;
+  obstacle_(5) = msg->dimensions.z;
+  obstacle_(6) = msg->rotation.w;
+  obstacle_(7) = msg->rotation.x;
+  obstacle_(8) = msg->rotation.y;
+  obstacle_(9) = msg->rotation.z;
   mpc_wrapper_.setObstacle(obstacle_);
 }
 
@@ -256,9 +256,9 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float R_W_O_31 = 2*q_W_O_x*q_W_O_z - 2*q_W_O_w*q_W_O_y;
   float R_W_O_32 = 2*q_W_O_w*q_W_O_x + 2*q_W_O_y*q_W_O_z;
   float R_W_O_33 = 2*q_W_O_w*q_W_O_w + 2*q_W_O_z*q_W_O_z - 1;
-  std::cout << R_W_O_11 << " " << R_W_O_12 << " " << R_W_O_13 << "\n" 
-    << R_W_O_21 << " " << R_W_O_22 << " " << R_W_O_23 << "\n"
-    << R_W_O_31 << " " << R_W_O_32 << " " << R_W_O_33 << "\n";
+  // std::cout << R_W_O_11 << " " << R_W_O_12 << " " << R_W_O_13 << "\n" 
+  //   << R_W_O_21 << " " << R_W_O_22 << " " << R_W_O_23 << "\n"
+  //   << R_W_O_31 << " " << R_W_O_32 << " " << R_W_O_33 << "\n";
   // Chance constraint helper (delta = 0.05)
   float cc_leftside = (p_x - p_o_x)*(n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (p_y - p_o_y)*(n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (p_z - p_o_z)*(n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) - 1;
   float cc_rightside = 1.163087*sqrt(2)*sqrt((n_o_x*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_y*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_z*((sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2);
@@ -266,7 +266,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float alpha = predicted_inputs_(kAlpha);
   const float alpha_max = 10.0;
   float alpha_frac = 1 - alpha/alpha_max;
-  const float factor = 5;
+  const float factor = 2;
   float cc = factor*alpha_frac + cc_rightside - cc_leftside;
 
   ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);

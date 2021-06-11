@@ -40,7 +40,7 @@
 #include <std_msgs/Empty.h>
 #include <std_msgs/Float32.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
-#include <vision_node/ObstacleArray.h>
+#include <vision_node/Obstacle.h>
 
 #include "rpg_mpc/mpc_wrapper.h"
 #include "rpg_mpc/mpc_params.h"
@@ -106,7 +106,7 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
      const geometry_msgs::PoseArray::ConstPtr& msg);
 
   void obstacleCallback(
-    const vision_node::ObstacleArray::ConstPtr& msg);
+    const vision_node::Obstacle::ConstPtr& msg);
 
   void offCallback(const std_msgs::Empty::ConstPtr& msg);
 
