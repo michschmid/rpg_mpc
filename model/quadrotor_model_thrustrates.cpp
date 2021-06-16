@@ -261,7 +261,7 @@ int main( ){
   ocp.subjectTo( 0.0 <= alpha <= alpha_max);
   ocp.subjectTo( 0.0 <= slack);
   // Obstacle chance constraint 
-  ocp.subjectTo(factor*alpha_frac + cc_rightside - cc_leftside <= 0);
+  ocp.subjectTo(factor*alpha_frac + cc_rightside - cc_leftside - slack<= 0);
 
   ocp.setNOD(23);
 
