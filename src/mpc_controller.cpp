@@ -51,6 +51,7 @@ MpcController<T>::MpcController(
       nh_.advertise<nav_msgs::Path>("mpc/trajectory_reference", 1);
   pub_angle_ = nh_.advertise<std_msgs::Float32>("mpc/projection_angle", 1);
   pub_radius_ = nh_.advertise<std_msgs::Float32>("mpc/projection_radius", 1);
+  pub_distance_ = nh_.advertise<std_msgs::Float32>("mpc/distance", 1);
   pub_alpha_ = nh_.advertise<std_msgs::Float32>("mpc/alpha", 1);
 
   sub_point_of_interest_ = nh_.subscribe("/line_poi", 1,
@@ -222,13 +223,14 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   // TODO: maybe handle case when two points are identical, e.g. origin when initialized
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);
 
-  const double epsilon2 = 0.001; 
+  const double epsilon2 = 0.001;
+  const double epsilon3 = 0.001;
   // Calculate polar representation
   float theta, radius;
   theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
   radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
 
-  float d = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y)))/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z));
+  float d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
 
   // Chance constraint
   double p_o_x = online_data_check_(13);
@@ -272,7 +274,7 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   float cc = factor*alpha_frac + cc_rightside - cc_leftside;
 
   ROS_INFO_THROTTLE(0.5, "DEBUG: chance constraint = %f", cc);
-  // ROS_INFO_THROTTLE(0.5, "DEBUG: d = %f", d);
+  // ROS_INFO_THROTTLE(0.5, "DEBUG: d_l = %f", d_l);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: theta = %f, r = %f ", theta, radius);
   // ROS_INFO_THROTTLE(0.5, "DEBUG: u1 = %f, v1 = %f, u2 = %f, v2 = %f", u_norm1, v_norm1, u_norm2, v_norm2);
 
@@ -295,6 +297,9 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   std_msgs::Float32 msg_radius;
   msg_radius.data = radius;
   pub_radius_.publish(msg_radius);
+  std_msgs::Float32 msg_distance;
+  msg_distance.data = d_l;
+  pub_distance_.publish(msg_distance);
   std_msgs::Float32 msg_alpha;
   msg_alpha.data = predicted_inputs_(kAlpha);
   pub_alpha_.publish(msg_alpha);

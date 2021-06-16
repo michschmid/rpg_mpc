@@ -145,6 +145,7 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   ros::Publisher pub_reference_trajectory_;
   ros::Publisher pub_angle_;
   ros::Publisher pub_radius_;
+  ros::Publisher pub_distance_;
   ros::Publisher pub_alpha_;
   ros::ServiceServer cost_serv_;
 

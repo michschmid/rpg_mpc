@@ -137,7 +137,8 @@ int main( ){
   const double so = 0.001;
   const double sb = 0.001;
   // Logistic cost on distance from quadrotor to obstacle
-  // It seems that acado only supports quadratic cost form, therefore the sqrt around the logistic function
+  // Sqrt around the logistic function to fit in quadratic term 
+  // minimizeLSQLinearTerms() would be an alternative
   const double r_o_tune = 1;
   const double lambda_o = 1;
   // IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
