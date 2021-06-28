@@ -40,6 +40,7 @@
 #include <std_msgs/Empty.h>
 #include <std_msgs/Float32.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
+#include <vision_node/Obstacle.h>
 
 #include "rpg_mpc/mpc_wrapper.h"
 #include "rpg_mpc/mpc_params.h"
@@ -57,14 +58,18 @@ enum STATE {
   kOriZ = 6,
   kVelX = 7,
   kVelY = 8,
-  kVelZ = 9
+  kVelZ = 9,
+  kDummy1 = 10, 
+  kDummy2 = 11
 };
 
 enum INPUT {
   kThrust = 0,
   kRateX = 1,
   kRateY = 2,
-  kRateZ = 3
+  kRateZ = 3,
+  kAlpha = 4, 
+  kSlack = 5
 };
 
 template<typename T>
@@ -73,9 +78,9 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static_assert(kStateSize == 10,
+  static_assert(kStateSize == 12,
                 "MpcController: Wrong model size. Number of states does not match.");
-  static_assert(kInputSize == 4,
+  static_assert(kInputSize == 6,
                 "MpcController: Wrong model size. Number of inputs does not match.");
 
   MpcController(const ros::NodeHandle& nh,
@@ -99,6 +104,9 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
 
   void pointOfInterestCallback(
      const geometry_msgs::PoseArray::ConstPtr& msg);
+
+  void obstacleCallback(
+    const vision_node::Obstacle::ConstPtr& msg);
 
   void offCallback(const std_msgs::Empty::ConstPtr& msg);
 
@@ -132,10 +140,13 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   // Subscribers and publisher.
   ros::Subscriber sub_point_of_interest_;
   ros::Subscriber sub_autopilot_off_;
+  ros::Subscriber sub_obstacle_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_trajectory_;
   ros::Publisher pub_angle_;
   ros::Publisher pub_radius_;
+  ros::Publisher pub_distance_;
+  ros::Publisher pub_alpha_;
   ros::ServiceServer cost_serv_;
 
   // Parameters
@@ -158,6 +169,7 @@ bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::
   Eigen::Matrix<T, kInputSize, kSamples> predicted_inputs_;
   Eigen::Matrix<T, kOdSize, 1> online_data_check_;
   Eigen::Matrix<T, 6, 1> point_of_interest_;
+  Eigen::Matrix<T, 10, 1> obstacle_;
 };
 
 

@@ -62,13 +62,15 @@ class MpcWrapper
     const T state_cost_scaling = 0.0, const T input_cost_scaling = 0.0);
 
   bool setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate);
+    T max_rollpitchrate, T max_yawrate, T max_alpha, T max_slack);
   bool setCameraParameters(
     const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
     Eigen::Quaternion<T>& q_B_C);
+  bool setReferenceDistance(const T reference_distance);
   bool setPointOfInterest(
     const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& position);
-
+  bool setObstacle(
+    const Eigen::Ref<const Eigen::Matrix<T, 10, 1>>& obstacle);
   bool setReferencePose(
     const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state);
   bool setTrajectory(
@@ -119,18 +121,18 @@ class MpcWrapper
   Eigen::Map<Eigen::Matrix<float, kEndRefSize, kEndRefSize>>
     acado_W_end_{acadoVariables.WN};
 
-  Eigen::Map<Eigen::Matrix<float, 4, kSamples, Eigen::ColMajor>>
+  Eigen::Map<Eigen::Matrix<float, 6, kSamples, Eigen::ColMajor>>
     acado_lower_bounds_{acadoVariables.lbValues};
 
-  Eigen::Map<Eigen::Matrix<float, 4, kSamples, Eigen::ColMajor>>
+  Eigen::Map<Eigen::Matrix<float, 6, kSamples, Eigen::ColMajor>>
     acado_upper_bounds_{acadoVariables.ubValues};
 
   Eigen::Matrix<T, kRefSize, kRefSize> W_ = (Eigen::Matrix<T, kRefSize, 1>() <<
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
     100 * Eigen::Matrix<T, 4, 1>::Ones(),
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
-    Eigen::Matrix<T, 2, 1>::Zero(),
-    1, 10, 10, 1).finished().asDiagonal();
+    Eigen::Matrix<T, 6, 1>::Zero(),
+    1, 10, 10, 1, 1, 1).finished().asDiagonal();
 
   Eigen::Matrix<T, kEndRefSize, kEndRefSize> WN_ =
     W_.block(0, 0, kEndRefSize, kEndRefSize);
@@ -138,7 +140,7 @@ class MpcWrapper
   bool acado_is_prepared_{false};
   const T dt_{0.1};
   const Eigen::Matrix<real_t, kInputSize, 1> kHoverInput_ =
-    (Eigen::Matrix<real_t, kInputSize, 1>() << 9.81, 0.0, 0.0, 0.0).finished();
+    (Eigen::Matrix<real_t, kInputSize, 1>() << 9.81, 0.0, 0.0, 0.0, 0.0, 0.0).finished();
 };
 
 

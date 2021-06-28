@@ -51,12 +51,16 @@ int main( ){
   DifferentialState     p_x, p_y, p_z;
   DifferentialState     q_w, q_x, q_y, q_z;
   DifferentialState     v_x, v_y, v_z;
+  DifferentialState     dummy_1, dummy_2; // workaround for https://github.com/acado/acado/issues/79
   Control               T, w_x, w_y, w_z;
+  Control               alpha, slack;
   DifferentialEquation  f;
   Function              h, hN;
   OnlineData            p_F_x1, p_F_y1, p_F_z1, p_F_x2, p_F_y2, p_F_z2;
   OnlineData            t_B_C_x, t_B_C_y, t_B_C_z;
   OnlineData            q_B_C_w, q_B_C_x, q_B_C_y, q_B_C_z;
+  OnlineData            p_o_x, p_o_y, p_o_z, a_o, b_o, c_o;
+  OnlineData            q_W_O_w, q_W_O_x, q_W_O_y, q_W_O_z;
 
   // Parameters with exemplary values. These are set/overwritten at runtime.
   const double t_start = 0.0;     // Initial time [s]
@@ -68,10 +72,12 @@ int main( ){
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
+  const double alpha_max = 10;
 
   // Bias to prevent division by zero.
   const double epsilon1 = 0.1;     // Camera projection recover bias [m]
   const double epsilon2 = 0.001;   // Cartesian to polar conversion bias [m]
+  const double epsilon3 = 0.001;   // Bias for sqrt
 
 
   // System Dynamics
@@ -85,6 +91,11 @@ int main( ){
   f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * T;
   f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * T;
   f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * T - g_z;
+  f << dot(dummy_1) == 0.00001 * alpha;
+  f << dot(dummy_2) == 0.00001 * slack;
+
+  // Optimization variable to trade-off between perception awareness and obstacle avoidance
+  IntermediateState alpha_frac = 1 - alpha/alpha_max;
 
   // TODO: duplicate the point of interest state for prototyping
 
@@ -107,26 +118,59 @@ int main( ){
 
   // Calculate polar representation
   IntermediateState theta, radius;
-  // TODO: as edge case could still lead to a division by zero if v_norm2 - v_norm1 = - epsilon2, make sure this never happens!!
-  theta = atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
-  radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
-  // TODO: need to ensure that theta does not change sign at pi/2
-  // theta = atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1));
-  // radius = (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1) * u_norm1) * cos(atan((v_norm2 - v_norm1) / (u_norm2 - u_norm1)));
+  theta = alpha_frac * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
+  radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
+  
+  // Distance from quadrotors position to powerline
+  IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
+
+  // Quadrotor radius
+  const double r_o = 0.4;
+  // Fix covariance
+  const double so = 0.001;
+  const double sb = 0.001;
+  // Logistic cost on distance from quadrotor to obstacle
+  // Sqrt around the logistic function to fit in quadratic term 
+  // minimizeLSQLinearTerms() would be an alternative
+  const double r_o_tune = 1;
+  const double lambda_o = 1;
+  // IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z) + epsilon3);
+  IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + epsilon3);
+  IntermediateState d_o_log_sqrt = sqrt(1 / (1 + exp(lambda_o * (d_o_k - r_o_tune))) + epsilon3);
+
+  // Intermediate state for constraints
+  IntermediateState dp_norm = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z) + epsilon3);
+  IntermediateState n_o_x = (p_x - p_o_x) / dp_norm;
+  IntermediateState n_o_y = (p_y - p_o_y) / dp_norm;
+  IntermediateState n_o_z = (p_z - p_o_z) / dp_norm;
+  // Quaternion to rotation matrix
+  IntermediateState R_W_O_11 = 2*q_W_O_w*q_W_O_w + 2*q_W_O_x*q_W_O_x - 1;
+  IntermediateState R_W_O_12 = 2*q_W_O_x*q_W_O_y - 2*q_W_O_w*q_W_O_z;
+  IntermediateState R_W_O_13 = 2*q_W_O_w*q_W_O_y + 2*q_W_O_x*q_W_O_z;
+  IntermediateState R_W_O_21 = 2*q_W_O_w*q_W_O_z + 2*q_W_O_x*q_W_O_y;
+  IntermediateState R_W_O_22 = 2*q_W_O_w*q_W_O_w + 2*q_W_O_y*q_W_O_y - 1;
+  IntermediateState R_W_O_23 = 2*q_W_O_y*q_W_O_z - 2*q_W_O_w*q_W_O_x;
+  IntermediateState R_W_O_31 = 2*q_W_O_x*q_W_O_z - 2*q_W_O_w*q_W_O_y;
+  IntermediateState R_W_O_32 = 2*q_W_O_w*q_W_O_x + 2*q_W_O_y*q_W_O_z;
+  IntermediateState R_W_O_33 = 2*q_W_O_w*q_W_O_w + 2*q_W_O_z*q_W_O_z - 1;
+  // Chance constraint helpers (delta = 0.01)
+  IntermediateState cc_leftside = (p_x - p_o_x)*(n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (p_y - p_o_y)*(n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (p_z - p_o_z)*(n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) - 1;
+  IntermediateState cc_rightside = 1.644976*sqrt(2)*sqrt((n_o_x*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_y*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_z*((sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2);
+  const double factor = 4;
 
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.
   h << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
-    << theta << radius 
-    << T << w_x << w_y << w_z;
+    << dummy_1 << dummy_2
+    << theta << radius << d_l << d_o_log_sqrt
+    << T << w_x << w_y << w_z << alpha << slack;
 
   // End cost vector consists of all states (no inputs at last state).
   hN << p_x << p_y << p_z
     << q_w << q_x << q_y << q_z
-    << v_x << v_y << v_z
-    << theta << radius;
+    << v_x << v_y << v_z;
 
   // Running cost weight matrix
   DMatrix Q(h.getDim(), h.getDim());
@@ -138,15 +182,21 @@ int main( ){
   Q(4,4) = 100;   // qx
   Q(5,5) = 100;   // qy
   Q(6,6) = 100;   // qz
-  Q(7,7) = 10;   // vx
-  Q(8,8) = 10;   // vy
-  Q(9,9) = 10;   // vz
-  Q(10,10) = 0;  // Cost on perception
-  Q(11,11) = 0;  // Cost on perception
-  Q(12,12) = 1;   // T
-  Q(13,13) = 1;   // wx
-  Q(14,14) = 1;   // wy
-  Q(15,15) = 1;   // wz
+  Q(7,7) = 10;    // vx
+  Q(8,8) = 10;    // vy
+  Q(9,9) = 10;    // vz
+  Q(10,10) = 0;   // dummy 1
+  Q(11,11) = 0;   // dummy 2
+  Q(12,12) = 0;   // Cost on perception
+  Q(13,13) = 0;   // Cost on perception
+  Q(14,14) = 0;   // Cost on distance to line
+  Q(15,15) = 0;   // Cost on distance to obstacle
+  Q(16,16) = 1;   // T
+  Q(17,17) = 1;   // wx
+  Q(18,18) = 1;   // wy
+  Q(19,19) = 1;   // wz
+  Q(20,20) = 1;   // alpha
+  Q(21,21) = 1;   // slack
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -161,8 +211,6 @@ int main( ){
   QN(7,7) = Q(7,7);   // vx
   QN(8,8) = Q(8,8);   // vy
   QN(9,9) = Q(9,9);   // vz
-  QN(10,10) = 0;  // Cost on perception
-  QN(11,11) = 0;  // Cost on perception
 
   // Set a reference for the analysis (if CODE_GEN is false).
   // Reference is at x = 2.0m in hover (qw = 1).
@@ -203,8 +251,13 @@ int main( ){
   ocp.subjectTo(-w_max_xy <= w_y <= w_max_xy);
   ocp.subjectTo(-w_max_yaw <= w_z <= w_max_yaw);
   ocp.subjectTo( T_min <= T <= T_max);
+  ocp.subjectTo( 0.0 <= alpha <= alpha_max);
+  ocp.subjectTo( 0.0 <= slack);
+  // Obstacle chance constraint 
+  // ocp.subjectTo(factor*alpha_frac + cc_rightside - cc_leftside - slack <= 0);
+  ocp.subjectTo(factor*alpha_frac + cc_rightside - cc_leftside <= 0);
 
-  ocp.setNOD(13);
+  ocp.setNOD(23);
 
 
   if(!CODE_GEN)

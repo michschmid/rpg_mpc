@@ -14,6 +14,9 @@
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
 
+  <build_depend>vision_node</build_depend>
+  <exec_depend>vision_node</exec_depend>
+
   <depend>autopilot</depend>
   <depend>geometry_msgs</depend>
   <depend>quadrotor_common</depend>

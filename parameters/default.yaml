@@ -25,13 +25,19 @@ Q_pos_xy:       5     # Cost for horizontal positon error
 Q_pos_z:        5     # Cost for vertical position error
 Q_attitude:     800   # Cost for attitude error
 Q_velocity:     10    # Cost for velocity error
-Q_perc_angle:   400     # Cost for reprojection error to camera optical axis (PAMPC)
-Q_perc_radius:  200
+Q_perc_angle:   400 
+Q_perc_radius:  200 
+Q_dist_l:       100
+Q_dist_o:       600
 
 # Cost on Inputs
 R_thrust:     1     # Cost on thrust input
 R_pitchroll:  1     # Cost on pitch and roll rate
 R_yaw:        1     # Cost on yaw rate
+
+# Cost on slack variables
+R_alpha: 1
+R_slack: 1000
 
 # Exponential scaling: W_i = W * exp(-i/N * cost_scaling).
 # cost_scaling = 0 means no scaling W_i = W. 
@@ -43,6 +49,12 @@ max_bodyrate_xy:    3.0       # ~ pi [rad/s]
 max_bodyrate_z:     2         # ~ pi*2/3 [rad/s]
 min_thrust:         2.0       # ~ 20% gravity [N]
 max_thrust:         20.0      # ~ 200% gravity [N]
+# Limits for slack variables
+max_alpha: 10
+max_slack: 1.0e+12 # numerical value of acado INFTY
+
+# Reference for body to power-line distance 
+reference_distance: 1.0
 
 # Extrinsics for Perception Aware MPC
 p_B_C:      [ 0.0, 0.0, 0.0 ]               # camera in body center [m]

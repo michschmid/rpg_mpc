@@ -42,7 +42,8 @@ MpcWrapper<T>::MpcWrapper()
   const Eigen::Matrix<T, kStateSize, 1> hover_state =
     (Eigen::Matrix<T, kStateSize, 1>() << 0.0, 0.0, 0.0,
                                           1.0, 0.0, 0.0, 0.0,
-                                          0.0, 0.0, 0.0).finished();
+                                          0.0, 0.0, 0.0,
+                                          0.0, 0.0).finished();
 
   // Initialize states x and xN and input u.
   acado_initial_state_ = hover_state.template cast<float>();
@@ -55,10 +56,12 @@ MpcWrapper<T>::MpcWrapper()
   acado_reference_states_.block(0, 0, kStateSize, kSamples) =
     hover_state.replicate(1, kSamples).template cast<float>();
 
-  acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
-    Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
-  // acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
-  //   (Eigen::Matrix<float, kCostSize-kStateSize, 1>() << -M_PI_2, 0).finished().replicate(1, kSamples);
+  // Point of interest
+  acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
+    Eigen::Matrix<float, 2, kSamples>::Zero();
+  // Distance 
+  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
+    (Eigen::Matrix<float, 1, 1>() << 1).finished().replicate(1, kSamples);
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
@@ -79,17 +82,24 @@ MpcWrapper<T>::MpcWrapper()
   // Initialize online data.
   Eigen::Matrix<T, 3, 1> p_B_C(0, 0, 0);
   Eigen::Quaternion<T> q_B_C(1, 0, 0, 0);
-  // IMPORTANT: The initial point of interest can blow up everything depending on the orientation of the camera
-  // It should ideally lead to a (0, 0) projection in the beginning.
+  setCameraParameters(p_B_C, q_B_C);
+
+  // IMPORTANT: The initial point of interest can blow up everything when enabling
+  // the perception cost and no point of interest is published. In this case it 
+  // is important that the pois are close to the vertical centerline
   // Also remember it is set in world coordinates.
-  // TODO: make this dependent on the initial q_BC passed in the param file, 
-  // this requires the wrapper object to be instantiated after the param loading in the mpc controller constructor 
   Eigen::Matrix<T, 6, 1> point_of_interest;
   point_of_interest << 2, 0, 1, 4, 0.01, 1;
   // point_of_interest << -1000, 0, 0, -1000, 0;
 
-  setCameraParameters(p_B_C, q_B_C);
-  // TODO: ad a warning in this method if this would lead to a NaN value
+  // Initialize obstacle to a far away point with small size
+  // IMPORTANT: can't be too far away as exp in logistic cost on distance would overflow
+  // The wrapper checks whether new obstacles are set to a distance too far away 
+  // but if you fly with the initial state for a long distance this causes overflow.
+  Eigen::Matrix<T, 10, 1> obstacle;
+  obstacle << 50, 50, 50, 0.01, 0.01, 0.01, 1, 0, 0, 0;
+  setObstacle(obstacle);
+
   setPointOfInterest(point_of_interest);
 
   // Initialize solver.
@@ -147,7 +157,7 @@ bool MpcWrapper<T>::setCosts(
 // Set the input limits.
 template <typename T>
 bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate)
+    T max_rollpitchrate, T max_yawrate, T max_alpha, T max_slack)
 {
   if(min_thrust <= 0.0 || min_thrust > max_thrust)
   {
@@ -173,13 +183,25 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
     return false;
   }
 
+  if(max_alpha <= 0.0)
+  {
+    ROS_ERROR("MPC: Maximal alpha is not set properly, not changed.");
+    return false;
+  }
+
+  if(max_slack <= 0.0)
+  {
+    ROS_ERROR("MPC: Maximal slack is not set properly, not changed.");
+    return false;
+  }
+
   // Set input boundaries.
-  Eigen::Matrix<T, 4, 1> lower_bounds = Eigen::Matrix<T, 4, 1>::Zero();
-  Eigen::Matrix<T, 4, 1> upper_bounds = Eigen::Matrix<T, 4, 1>::Zero();
+  Eigen::Matrix<T, 6, 1> lower_bounds = Eigen::Matrix<T, 6, 1>::Zero();
+  Eigen::Matrix<T, 6, 1> upper_bounds = Eigen::Matrix<T, 6, 1>::Zero();
   lower_bounds << min_thrust,
-    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate;
+    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate, 0.0, 0.0;
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate;
+    max_rollpitchrate, max_rollpitchrate, max_yawrate, max_alpha, max_slack;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();
@@ -206,6 +228,15 @@ bool MpcWrapper<T>::setCameraParameters(
   return true;
 }
 
+// Set reference distance body to powerline
+template <typename T>
+bool MpcWrapper<T>::setReferenceDistance(const T reference_distance)
+{
+  acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
+    (Eigen::Matrix<float, 1, 1>() << static_cast<float>(reference_distance)).finished().replicate(1, kSamples);
+  return true;
+}
+
 // Set the point of interest. Perception cost should be non-zero.
 template <typename T>
 bool MpcWrapper<T>::setPointOfInterest(
@@ -216,6 +247,33 @@ bool MpcWrapper<T>::setPointOfInterest(
   return true;
 }
 
+template <typename T>
+bool MpcWrapper<T>::setObstacle(
+  const Eigen::Ref<const Eigen::Matrix<T, 10, 1>>& obstacle)
+{
+  // Check that obstacle is not to far away and causes overflow 
+  T exp_check = exp(sqrt((acado_states_(0) - obstacle(0))*(acado_states_(0) - obstacle(0)) + (acado_states_(1) - obstacle(1))*(acado_states_(1) - obstacle(1))));
+  // Check that all dimensions are positive
+  bool dimensions_positive = obstacle(3) > 0 && obstacle(4) > 0 && obstacle(5) > 0;
+  // 1.0e+53 Corresponding to acado INFINITY (not sure how to include this properly) and a safety margin
+  if (exp_check > 1.0e+53 / 100.0)
+  {
+    ROS_ERROR("Tried to set an obstacle to far away. Would cause overflow. Ignoring.");
+    return false;
+  }
+  else if (!dimensions_positive)
+  {
+    ROS_ERROR("Tried to set an obstacle ellipsoid with non-positive half axis. Ignoring.");
+    return false;
+  }
+  else
+  {
+    acado_online_data_.block(13, 0, 10, ACADO_N+1)
+      = obstacle.replicate(1, ACADO_N+1).template cast<float>();
+    return true;
+  }
+}
+
 // Set a reference pose.
 template <typename T>
 bool MpcWrapper<T>::setReferencePose(
@@ -224,8 +282,8 @@ bool MpcWrapper<T>::setReferencePose(
   acado_reference_states_.block(0, 0, kStateSize, kSamples) =
     state.replicate(1, kSamples).template cast<float>();
 
-  acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
-    Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
+  acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
+    Eigen::Matrix<float, 2, kSamples>::Zero();
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
@@ -252,8 +310,8 @@ bool MpcWrapper<T>::setTrajectory(
   acado_reference_states_.block(0, 0, kStateSize, kSamples) =
     states.block(0, 0, kStateSize, kSamples).template cast<float>();
 
-  acado_reference_states_.block(kStateSize, 0, kCostSize-kStateSize, kSamples) =
-    Eigen::Matrix<float, kCostSize-kStateSize, kSamples>::Zero();
+  acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
+    Eigen::Matrix<float, 2, kSamples>::Zero();
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();

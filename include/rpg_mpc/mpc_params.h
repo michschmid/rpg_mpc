@@ -47,6 +47,8 @@ class MpcParams {
     max_bodyrate_z_(0.0),
     min_thrust_(0.0),
     max_thrust_(0.0),
+    max_alpha_(0.0),
+    max_slack_(0.0),
     p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
     q_B_C_(Eigen::Quaternion<T>(1.0, 0.0, 0.0, 0.0)),
     Q_(Eigen::Matrix<T, kCostSize, kCostSize>::Zero()),
@@ -69,36 +71,45 @@ class MpcParams {
       return false
 
     // Read state costs.
-    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius;
+    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o;
     GET_PARAM(Q_pos_xy);
     GET_PARAM(Q_pos_z);
     GET_PARAM(Q_attitude);
     GET_PARAM(Q_velocity);
     quadrotor_common::getParam("Q_perc_angle", Q_perc_angle, (T)0.0, pnh);
     quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
+    quadrotor_common::getParam("Q_dist_l", Q_dist_l, (T)0.0, pnh);
+    quadrotor_common::getParam("Q_dist_o", Q_dist_o, (T)0.0, pnh);
+    T Q_dummy = 0.0;
 
     // Check whether all state costs are positive.
-    if(Q_pos_xy            <= 0.0 ||
-       Q_pos_z             <= 0.0 ||
-       Q_attitude          <= 0.0 ||
-       Q_velocity          <= 0.0 ||
-       Q_perc_angle   < 0.0 ||
-       Q_perc_radius  < 0.0)      // Perception cost can be zero to deactivate.
+    if(Q_pos_xy           <= 0.0 ||
+       Q_pos_z            <= 0.0 ||
+       Q_attitude         <= 0.0 ||
+       Q_velocity         <= 0.0 ||
+       Q_perc_angle       < 0.0 ||    // Perception cost can be zero to deactivate.
+       Q_perc_radius      < 0.0 || 
+       Q_dist_l           < 0.0 || 
+       Q_dist_o           < 0.0 )      
     {
       ROS_ERROR("MPC: State cost Q has negative enries!");
       return false;
     }
 
     // Read input costs.
-    T R_thrust, R_pitchroll, R_yaw;
+    T R_thrust, R_pitchroll, R_yaw, R_alpha, R_slack;
     GET_PARAM(R_thrust);
     GET_PARAM(R_pitchroll);
     GET_PARAM(R_yaw);
+    GET_PARAM(R_alpha);
+    GET_PARAM(R_slack);
 
     // Check whether all input costs are positive.
     if(R_thrust    <= 0.0 ||
        R_pitchroll <= 0.0 ||
-       R_yaw       <= 0.0)
+       R_yaw       <= 0.0 ||
+       R_alpha     < 0.0 ||
+       R_slack     < 0.0)
     {
       ROS_ERROR("MPC: Input cost R has negative enries!");
       return false;
@@ -109,9 +120,10 @@ class MpcParams {
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
-      Q_perc_angle, Q_perc_radius).finished().asDiagonal();
+      Q_dummy, Q_dummy, 
+      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-      R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
+      R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha, R_slack).finished().asDiagonal();
 
     // Read cost scaling values
     quadrotor_common::getParam("state_cost_exponential",
@@ -124,16 +136,23 @@ class MpcParams {
     GET_PARAM_(max_bodyrate_z);
     GET_PARAM_(min_thrust);
     GET_PARAM_(max_thrust);
+    GET_PARAM_(max_alpha);
+    GET_PARAM_(max_slack);
 
     // Check whether all input limits are positive.
     if(max_bodyrate_xy_ <= 0.0 ||
        max_bodyrate_z_  <= 0.0 ||
        min_thrust_      <= 0.0 ||
-       max_thrust_      <= 0.0)
+       max_thrust_      <= 0.0 ||
+       max_alpha_       <= 0.0 ||
+       max_slack_       <= 0.0)
     {
       ROS_ERROR("MPC: All limits must be positive non-zero values!");
       return false;
     }
+
+    // Read the body to line reference distance
+    GET_PARAM_(reference_distance);
 
     // Optional parameters
     std::vector<T> p_B_C(3), q_B_C(4);
@@ -180,6 +199,10 @@ class MpcParams {
   T max_bodyrate_z_;
   T min_thrust_;
   T max_thrust_;
+  T max_alpha_;
+  T max_slack_;
+
+  T reference_distance_;
 
   Eigen::Matrix<T, 3, 1> p_B_C_;
   Eigen::Quaternion<T> q_B_C_;
