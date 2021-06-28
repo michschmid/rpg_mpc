@@ -291,13 +291,6 @@ quadrotor_common::ControlCommand MpcController<T>::run(
   publishPrediction(predicted_states_, predicted_inputs_, call_time);
   // Publish the reference trajectory for visualization.
   publishReference(reference_states_, call_time);
-  // Publish the projection for debugging
-  std_msgs::Float32 msg_angle;
-  msg_angle.data = theta;
-  pub_angle_.publish(msg_angle);
-  std_msgs::Float32 msg_radius;
-  msg_radius.data = radius;
-  pub_radius_.publish(msg_radius);
 
   // Start a thread to prepare for the next execution.
   preparation_thread_ = std::thread(&MpcController<T>::preparationThread, this);

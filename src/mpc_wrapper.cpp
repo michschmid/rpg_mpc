@@ -89,7 +89,7 @@ MpcWrapper<T>::MpcWrapper()
   // is important that the pois are close to the vertical centerline
   // Also remember it is set in world coordinates.
   Eigen::Matrix<T, 6, 1> point_of_interest;
-  point_of_interest << 2, 0, 1, 4, 0.01, 1;
+  point_of_interest << 2, 0, 13, 4, 0.01, 13;
   // point_of_interest << -1000, 0, 0, -1000, 0;
 
   // Initialize obstacle to a far away point with small size
