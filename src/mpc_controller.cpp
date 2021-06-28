@@ -74,6 +74,8 @@ MpcController<T>::MpcController(
   preparation_thread_ = std::thread(&MpcWrapper<T>::prepare, mpc_wrapper_);
 }
 
+// This function is deprecated as it won't work together with the UI, but left
+// here for reference
 template<typename T>
 bool MpcController<T>::setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::set_perception_cost::Response& response)
 {
