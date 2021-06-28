@@ -95,7 +95,7 @@ int main( ){
   f << dot(dummy_2) == 0.00001 * slack;
 
   // Optimization variable to trade-off between perception awareness and obstacle avoidance
-  IntermediateState alpha_frac = 1 - alpha/alpha_max; // TODO: not sure whether alpha_max is updated with bounds
+  IntermediateState alpha_frac = 1 - alpha/alpha_max;
 
   // Intermediate states to calculate point of interest projection!
   // IMPORTANT: This assumes the camera coordinate system to be oriented as in the paper (optical axis z, y down),
@@ -116,21 +116,12 @@ int main( ){
 
   // Calculate polar representation
   IntermediateState theta, radius;
-  // TODO: as edge case could still lead to a division by zero if v_norm2 - v_norm1 = - epsilon2, make sure this never happens!!
   theta = alpha_frac * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
   radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
   
   // Distance from quadrotors position to powerline
-  // TODO: the distance is unsigned! this might lead to a problem
   IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
 
-  // Obstacle for prototyping
-  // const double p_o_x = 0.0;
-  // const double p_o_y = 10.0;
-  // const double p_o_z = 15.0;
-  // const double a_o = 1.0;
-  // const double b_o = 0.5;
-  // const double c_o = 2.0;
   // Quadrotor radius
   const double r_o = 0.4;
   // Fix covariance
@@ -141,7 +132,7 @@ int main( ){
   // minimizeLSQLinearTerms() would be an alternative
   const double r_o_tune = 1;
   const double lambda_o = 1;
-  // IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z));
+  // IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + (p_z - p_o_z)*(p_z - p_o_z) + epsilon3);
   IntermediateState d_o_k = sqrt((p_x - p_o_x)*(p_x - p_o_x) + (p_y - p_o_y)*(p_y - p_o_y) + epsilon3);
   IntermediateState d_o_log_sqrt = sqrt(1 / (1 + exp(lambda_o * (d_o_k - r_o_tune))) + epsilon3);
 

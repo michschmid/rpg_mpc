@@ -84,17 +84,18 @@ MpcWrapper<T>::MpcWrapper()
   Eigen::Quaternion<T> q_B_C(1, 0, 0, 0);
   setCameraParameters(p_B_C, q_B_C);
 
-  // IMPORTANT: The initial point of interest can blow up everything depending on the orientation of the camera
-  // It should ideally lead to a (0, 0) projection in the beginning.
+  // IMPORTANT: The initial point of interest can blow up everything when enabling
+  // the perception cost and no point of interest is published. In this case it 
+  // is important that the pois are close to the vertical centerline
   // Also remember it is set in world coordinates.
-  // TODO: make this dependent on the initial q_BC passed in the param file, 
-  // this requires the wrapper object to be instantiated after the param loading in the mpc controller constructor 
   Eigen::Matrix<T, 6, 1> point_of_interest;
   point_of_interest << 2, 0, 13, 4, 0.01, 13;
   // point_of_interest << -1000, 0, 0, -1000, 0;
 
   // Initialize obstacle to a far away point with small size
   // IMPORTANT: can't be too far away as exp in logistic cost on distance would overflow
+  // The wrapper checks whether new obstacles are set to a distance too far away 
+  // but if you fly with the initial state for a long distance this causes overflow.
   Eigen::Matrix<T, 10, 1> obstacle;
   obstacle << 50, 50, 50, 0.01, 0.01, 0.01, 1, 0, 0, 0;
   setObstacle(obstacle);
@@ -184,13 +185,13 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
 
   if(max_alpha <= 0.0)
   {
-    ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
+    ROS_ERROR("MPC: Maximal alpha is not set properly, not changed.");
     return false;
   }
 
   if(max_slack <= 0.0)
   {
-    ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
+    ROS_ERROR("MPC: Maximal slack is not set properly, not changed.");
     return false;
   }
 
@@ -207,8 +208,6 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
 
   acado_upper_bounds_ =
     upper_bounds.replicate(1, kSamples).template cast<float>();
-  // std::cout << acado_inputs_ << "\n";
-  // std::cout << acado_states_ << "\n";
   return true;
 }
 
@@ -316,7 +315,6 @@ bool MpcWrapper<T>::setTrajectory(
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     inputs.block(0, 0, kInputSize, kSamples).template cast<float>();
-  // std::cout << acado_inputs_ << "\n";
 
   acado_reference_end_state_.segment(0, kStateSize) =
     states.col(kSamples).template cast<float>();

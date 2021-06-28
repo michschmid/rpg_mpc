@@ -33,7 +33,7 @@ namespace rpg_mpc {
 #include "acado_common.h"
 
 static constexpr int kSamples = ACADO_N;      // number of samples
-static constexpr int kStateSize = ACADO_NX;   // number of states (differentail states - 2 dummy)
+static constexpr int kStateSize = ACADO_NX;   // number of states
 static constexpr int kRefSize = ACADO_NY;     // number of reference states
 static constexpr int kEndRefSize = ACADO_NYN; // number of end reference states
 static constexpr int kInputSize = ACADO_NU;   // number of inputs
