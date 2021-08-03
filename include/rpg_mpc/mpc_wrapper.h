@@ -121,6 +121,13 @@ class MpcWrapper
   Eigen::Map<Eigen::Matrix<float, kEndRefSize, kEndRefSize>>
     acado_W_end_{acadoVariables.WN};
 
+  // TODO: linear cost weighting
+  Eigen::Map<Eigen::Matrix<float, kStateSize, kSamples+1>>
+    acado_Wlx_{acadoVariables.Wlx};
+
+  Eigen::Map<Eigen::Matrix<float, kInputSize, kSamples>>
+    acado_Wlu_{acadoVariables.Wlu};
+
   Eigen::Map<Eigen::Matrix<float, 6, kSamples, Eigen::ColMajor>>
     acado_lower_bounds_{acadoVariables.lbValues};
 
@@ -136,6 +143,11 @@ class MpcWrapper
 
   Eigen::Matrix<T, kEndRefSize, kEndRefSize> WN_ =
     W_.block(0, 0, kEndRefSize, kEndRefSize);
+
+  // TODO:
+  Eigen::Matrix<T, kStateSize, 1> Wlx_ = Eigen::Matrix<T, kStateSize, 1>::Zero();
+  Eigen::Matrix<T, kInputSize, 1> Wlu_ = (Eigen::Matrix<T, kInputSize, 1>() << 
+    0, 0, 0, 0, 15, 0).finished();
 
   bool acado_is_prepared_{false};
   const T dt_{0.1};

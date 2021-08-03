@@ -77,6 +77,10 @@ MpcWrapper<T>::MpcWrapper()
   {
     acado_W_ = W_.replicate(1, kSamples).template cast<float>();
     acado_W_end_ = WN_.template cast<float>();
+
+    // TODO:
+    acado_Wlx_ = Wlx_.replicate(1, kSamples+1).template cast<float>();
+    acado_Wlu_ = Wlu_.replicate(1, kSamples).template cast<float>();
   }
 
   // Initialize online data.

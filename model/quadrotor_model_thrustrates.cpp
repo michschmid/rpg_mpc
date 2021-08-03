@@ -119,12 +119,14 @@ int main( ){
   theta = alpha_frac * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
 
   //TODO:
-  //radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
-  radius = 1.0 * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
+  radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
+  //radius = 1.0 * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
 
   //TODO:
   // Distance from quadrotors position to powerline
-  IntermediateState d_l = alpha_frac*sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
+  IntermediateState d_l = sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
+  //IntermediateState d_l = alpha_frac*sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
+
 
   // Quadrotor radius
   const double r_o = 0.4;
@@ -160,9 +162,6 @@ int main( ){
   IntermediateState cc_rightside = 1.644976*sqrt(2)*sqrt((n_o_x*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_y*((sb + so)*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2 + (n_o_z*((sb + so)*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))*(2*n_o_x*(R_W_O_11*R_W_O_11/(a_o + r_o) + R_W_O_21*R_W_O_21/(b_o + r_o) + R_W_O_31*R_W_O_31/(c_o + r_o)) + 2*n_o_y*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o))) + (sb + so)*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))*(2*n_o_y*(R_W_O_12*R_W_O_12/(a_o + r_o) + R_W_O_22*R_W_O_22/(b_o + r_o) + R_W_O_32*R_W_O_32/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_12)/(a_o + r_o) + (R_W_O_21*R_W_O_22)/(b_o + r_o) + (R_W_O_31*R_W_O_32)/(c_o + r_o)) + 2*n_o_z*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o))) + (sb + so)*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o))*(2*n_o_z*(R_W_O_13*R_W_O_13/(a_o + r_o) + R_W_O_23*R_W_O_23/(b_o + r_o) + R_W_O_33*R_W_O_33/(c_o + r_o)) + 2*n_o_x*((R_W_O_11*R_W_O_13)/(a_o + r_o) + (R_W_O_21*R_W_O_23)/(b_o + r_o) + (R_W_O_31*R_W_O_33)/(c_o + r_o)) + 2*n_o_y*((R_W_O_12*R_W_O_13)/(a_o + r_o) + (R_W_O_22*R_W_O_23)/(b_o + r_o) + (R_W_O_32*R_W_O_33)/(c_o + r_o)))))/2);
   const double factor = 4;
 
-  //TODO:
-  IntermediateState alpha_cost = sqrt(alpha*alpha + 5*alpha + epsilon3);
-
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.
   h << p_x << p_y << p_z
@@ -170,7 +169,7 @@ int main( ){
     << v_x << v_y << v_z
     << dummy_1 << dummy_2
     << theta << radius << d_l << d_o_log_sqrt
-    << T << w_x << w_y << w_z << alpha_cost << slack;
+    << T << w_x << w_y << w_z << alpha << slack;
 
   // End cost vector consists of all states (no inputs at last state).
   hN << p_x << p_y << p_z
@@ -217,6 +216,17 @@ int main( ){
   QN(8,8) = Q(8,8);   // vy
   QN(9,9) = Q(9,9);   // vz
 
+  // TODO:
+  // Linear cost for slack variable alpha
+  DVector Slx(f.getDim());
+  Slx.setZero();
+
+  DVector Slu(6);
+  Slu.setZero();
+  // cost for alpha
+  Slu(4) = 15;
+
+
   // Set a reference for the analysis (if CODE_GEN is false).
   // Reference is at x = 2.0m in hover (qw = 1).
   DVector r(h.getDim());    // Running cost reference
@@ -247,6 +257,7 @@ int main( ){
     QN_sparse.setIdentity();
     ocp.minimizeLSQ( Q_sparse, h);
     ocp.minimizeLSQEndTerm( QN_sparse, hN );
+    ocp.minimizeLSQLinearTerms(Slx, Slu);
   }
 
   // Add system dynamics

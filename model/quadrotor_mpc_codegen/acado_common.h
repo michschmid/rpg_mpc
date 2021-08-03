@@ -88,7 +88,7 @@ extern "C"
 /** Providing interface for arrival cost. */
 #define ACADO_USE_ARRIVAL_COST 0
 /** Indicator for usage of non-hard-coded linear terms in the objective. */
-#define ACADO_USE_LINEAR_TERMS 0
+#define ACADO_USE_LINEAR_TERMS 1
 /** Indicator for type of fixed weighting matrices. */
 #define ACADO_WEIGHTING_MATRICES_TYPE 2
 
@@ -139,6 +139,18 @@ real_t W[ 9680 ];
 
 /** Matrix of size: 10 x 10 (row major format) */
 real_t WN[ 100 ];
+
+/** Column vector of size: 252
+ * 
+ *  Linear term weighting vector for states.
+ */
+real_t Wlx[ 252 ];
+
+/** Column vector of size: 120
+ * 
+ *  Linear term weighting vector for controls.
+ */
+real_t Wlu[ 120 ];
 
 /** Column vector of size: 12
  * 
@@ -196,8 +208,8 @@ real_t evGx[ 2880 ];
 /** Matrix of size: 240 x 6 (row major format) */
 real_t evGu[ 1440 ];
 
-/** Column vector of size: 313 */
-real_t objAuxVar[ 313 ];
+/** Column vector of size: 292 */
+real_t objAuxVar[ 292 ];
 
 /** Row vector of size: 41 */
 real_t objValueIn[ 41 ];
