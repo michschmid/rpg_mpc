@@ -100,7 +100,7 @@ public:
 private:
   // Internal helper functions.
 
-bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::set_perception_cost::Response& response);
+  bool setPerceptionCost(rpg_mpc::set_perception_cost::Request& request, rpg_mpc::set_perception_cost::Response& response);
 
   void pointOfInterestCallback(
      const geometry_msgs::PoseArray::ConstPtr& msg);
