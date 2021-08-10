@@ -76,7 +76,7 @@ extern "C"
 /** Number of differential derivative variables. */
 #define ACADO_NXD 0
 /** Number of references/measurements per node on the first N nodes. */
-#define ACADO_NY 22
+#define ACADO_NY 23
 /** Number of references/measurements on the last (N + 1)st node. */
 #define ACADO_NYN 10
 /** Total number of QP optimization variables. */
@@ -122,11 +122,11 @@ real_t u[ 120 ];
  */
 real_t od[ 483 ];
 
-/** Column vector of size: 440
+/** Column vector of size: 460
  * 
- *  Matrix containing 20 reference/measurement vectors of size 22 for first 20 nodes.
+ *  Matrix containing 20 reference/measurement vectors of size 23 for first 20 nodes.
  */
-real_t y[ 440 ];
+real_t y[ 460 ];
 
 /** Column vector of size: 10
  * 
@@ -134,8 +134,8 @@ real_t y[ 440 ];
  */
 real_t yN[ 10 ];
 
-/** Matrix of size: 440 x 22 (row major format) */
-real_t W[ 9680 ];
+/** Matrix of size: 460 x 23 (row major format) */
+real_t W[ 10580 ];
 
 /** Matrix of size: 10 x 10 (row major format) */
 real_t WN[ 100 ];
@@ -196,8 +196,8 @@ typedef struct ACADOworkspace_
 /** Column vector of size: 240 */
 real_t d[ 240 ];
 
-/** Column vector of size: 440 */
-real_t Dy[ 440 ];
+/** Column vector of size: 460 */
+real_t Dy[ 460 ];
 
 /** Column vector of size: 10 */
 real_t DyN[ 10 ];
@@ -208,26 +208,26 @@ real_t evGx[ 2880 ];
 /** Matrix of size: 240 x 6 (row major format) */
 real_t evGu[ 1440 ];
 
-/** Column vector of size: 293 */
-real_t objAuxVar[ 293 ];
+/** Column vector of size: 323 */
+real_t objAuxVar[ 323 ];
 
 /** Row vector of size: 41 */
 real_t objValueIn[ 41 ];
 
-/** Row vector of size: 418 */
-real_t objValueOut[ 418 ];
+/** Row vector of size: 437 */
+real_t objValueOut[ 437 ];
 
 /** Matrix of size: 240 x 12 (row major format) */
 real_t Q1[ 2880 ];
 
-/** Matrix of size: 240 x 22 (row major format) */
-real_t Q2[ 5280 ];
+/** Matrix of size: 240 x 23 (row major format) */
+real_t Q2[ 5520 ];
 
 /** Matrix of size: 120 x 6 (row major format) */
 real_t R1[ 720 ];
 
-/** Matrix of size: 120 x 22 (row major format) */
-real_t R2[ 2640 ];
+/** Matrix of size: 120 x 23 (row major format) */
+real_t R2[ 2760 ];
 
 /** Matrix of size: 240 x 6 (row major format) */
 real_t S1[ 1440 ];

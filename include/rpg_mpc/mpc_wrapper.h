@@ -138,7 +138,7 @@ class MpcWrapper
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
     100 * Eigen::Matrix<T, 4, 1>::Ones(),
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
-    Eigen::Matrix<T, 6, 1>::Zero(),
+    Eigen::Matrix<T, 7, 1>::Zero(),
     1, 10, 10, 1, 1, 1).finished().asDiagonal();
 
   Eigen::Matrix<T, kEndRefSize, kEndRefSize> WN_ =

@@ -119,14 +119,19 @@ int main( ){
   theta = alpha_frac * atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1 + epsilon2));
 
   //TODO:
-  //radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
-  radius = 1.0 * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
+  radius = alpha_frac * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
+  //radius = 1.0 * (v_norm1 - (v_norm2 - v_norm1) / (u_norm2 - u_norm1  + epsilon2) * u_norm1) * sin(atan(-(u_norm2 - u_norm1) / (v_norm2 - v_norm1  + epsilon2)));
 
   //TODO:
   // Distance from quadrotors position to powerline
   IntermediateState d_l = sqrt(alpha_frac*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
   //IntermediateState d_l = alpha_frac*sqrt(((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_y - p_F2_y) - (p_y - p_F1_y)*(p_x - p_F2_x)) + ((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x))*((p_x - p_F1_x)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_x - p_F2_x)) + ((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))*((p_y - p_F1_y)*(p_z - p_F2_z) - (p_z - p_F1_z)*(p_y - p_F2_y))+epsilon3)/sqrt((p_F1_x - p_F2_x)*(p_F1_x - p_F2_x) + (p_F1_y - p_F2_y)*(p_F1_y - p_F2_y) + (p_F1_z - p_F2_z)*(p_F1_z - p_F2_z) + epsilon3);
 
+  //TODO:
+  // Difference in yaw angle and line bearing
+  IntermediateState yaw = atan(2*(q_w*q_z + q_x*q_y)/(1 - 2*(q_y*q_y + q_z*q_z)));
+  IntermediateState line_bearing = atan((p_F1_y - p_F2_y)/(p_F1_x - p_F2_x));
+  IntermediateState diff_angle = (1-alpha_frac)*(line_bearing - yaw + 3.141592/2.0);
 
   // Quadrotor radius
   const double r_o = 0.4;
@@ -168,7 +173,7 @@ int main( ){
     << q_w << q_x << q_y << q_z
     << v_x << v_y << v_z
     << dummy_1 << dummy_2
-    << theta << radius << d_l << d_o_log_sqrt
+    << theta << radius << d_l << d_o_log_sqrt << diff_angle
     << T << w_x << w_y << w_z << alpha << slack;
 
   // End cost vector consists of all states (no inputs at last state).
@@ -194,13 +199,14 @@ int main( ){
   Q(12,12) = 0;   // Cost on perception
   Q(13,13) = 0;   // Cost on perception
   Q(14,14) = 0;   // Cost on distance to line
-  Q(15,15) = 0;   // Cost on distance to obstacle
-  Q(16,16) = 1;   // T, thrust
+  Q(15,15) = 0;   // Cost on distance to obstacleTODO:
+  Q(16,16) = 10;   // T, thrust
   Q(17,17) = 1;   // wx, pitch 
   Q(18,18) = 1;   // wy, roll
   Q(19,19) = 1;   // wz, yaw
   Q(20,20) = 1;   // alpha
   Q(21,21) = 1;   // slack
+  Q(22,22) = 1;
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());

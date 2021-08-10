@@ -121,7 +121,7 @@ class MpcParams {
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
       Q_dummy, Q_dummy, 
-      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o).finished().asDiagonal();
+      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, 10).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha, R_slack).finished().asDiagonal();
 
