@@ -42,8 +42,8 @@ MpcController<T>::MpcController(
     reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples + 1>::Zero()),
     predicted_states_(Eigen::Matrix<T, kStateSize, kSamples + 1>::Zero()),
     predicted_inputs_(Eigen::Matrix<T, kInputSize, kSamples>::Zero()),
-    point_of_interest_(Eigen::Matrix<T, 6, 1>::Zero()),
     online_data_check_(Eigen::Matrix<T, kOdSize, 1>::Zero()),
+    point_of_interest_(Eigen::Matrix<T, 6, 1>::Zero()),
     obstacle_(Eigen::Matrix<T, 10, 1>::Zero()) {
   pub_predicted_trajectory_ =
       nh_.advertise<nav_msgs::Path>(topic, 1);
