@@ -72,7 +72,7 @@ int main( ){
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
   const double T_min = 2;         // Minimal thrust [N]
   const double T_max = 20;        // Maximal thrust [N]
-  const double alpha_max = 10;
+  const double alpha_max = 10;    // Maximum value for slack variable alpha [-]
 
   // Bias to prevent division by zero.
   const double epsilon1 = 0.1;     // Camera projection recover bias [m]
@@ -199,14 +199,15 @@ int main( ){
   Q(12,12) = 0;   // Cost on perception
   Q(13,13) = 0;   // Cost on perception
   Q(14,14) = 0;   // Cost on distance to line
-  Q(15,15) = 0;   // Cost on distance to obstacleTODO:
-  Q(16,16) = 10;   // T, thrust
-  Q(17,17) = 1;   // wx, pitch 
-  Q(18,18) = 1;   // wy, roll
-  Q(19,19) = 1;   // wz, yaw
-  Q(20,20) = 1;   // alpha
-  Q(21,21) = 1;   // slack
-  Q(22,22) = 1;
+  Q(15,15) = 0;   // Cost on distance to obstacle
+  Q(16,16) = 10;  // Cost on difference of quad heading and line bearing
+  Q(17,17) = 1;   // T, thrust
+  Q(18,18) = 1;   // wx, pitch 
+  Q(19,19) = 1;   // wy, roll
+  Q(20,20) = 1;   // wz, yaw
+  Q(21,21) = 1;   // alpha
+  Q(22,22) = 1;   // slack
+  
 
   // End cost weight matrix
   DMatrix QN(hN.getDim(), hN.getDim());
@@ -223,13 +224,15 @@ int main( ){
   QN(9,9) = Q(9,9);   // vz
 
   // TODO:
-  // Linear cost for slack variable alpha
+  // Linear cost for slack variable alpha to ensure slack variable equal to zero when possible
+  // Weight vector for states, actual weights are reset at run time
   DVector Slx(f.getDim());
   Slx.setZero();
 
+  // Weight vector for inputs
   DVector Slu(6);
   Slu.setZero();
-  // cost for alpha
+  // Just include linear cost for slack variable alpha
   Slu(4) = 15;
 
 
@@ -263,6 +266,7 @@ int main( ){
     QN_sparse.setIdentity();
     ocp.minimizeLSQ( Q_sparse, h);
     ocp.minimizeLSQEndTerm( QN_sparse, hN );
+    // Add linear cost terms
     ocp.minimizeLSQLinearTerms(Slx, Slu);
   }
 

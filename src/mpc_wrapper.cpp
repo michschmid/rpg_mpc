@@ -116,9 +116,10 @@ MpcWrapper<T>::MpcWrapper()
 template <typename T>
 MpcWrapper<T>::MpcWrapper(
   const Eigen::Ref<const Eigen::Matrix<T, kCostSize, kCostSize>> Q,
-  const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kInputSize>> R)
+  const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kInputSize>> R,
+  const Eigen::Ref<const Eigen::Matrix<T, kInputSize, 1>> R_lin)
 {
-  setCosts(Q, R);
+  setCosts(Q, R, R_lin);
   MpcWrapper();
 }
 
@@ -127,6 +128,7 @@ template <typename T>
 bool MpcWrapper<T>::setCosts(
   const Eigen::Ref<const Eigen::Matrix<T, kCostSize, kCostSize>> Q,
   const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kInputSize>> R,
+  const Eigen::Ref<const Eigen::Matrix<T, kInputSize, 1>> R_lin,
   const T state_cost_scaling, const T input_cost_scaling)
 {
   if(state_cost_scaling < 0.0 || input_cost_scaling < 0.0 )
@@ -137,6 +139,7 @@ bool MpcWrapper<T>::setCosts(
   W_.block(0, 0, kCostSize, kCostSize) = Q;
   W_.block(kCostSize, kCostSize, kInputSize, kInputSize) = R;
   WN_ = W_.block(0, 0, kCostSize, kCostSize);
+  Wlu_ = R_lin;
 
   float state_scale{1.0};
   float input_scale{1.0};
@@ -154,6 +157,10 @@ bool MpcWrapper<T>::setCosts(
         ).template cast<float>() * input_scale;
   } 
   acado_W_end_ = WN_.template cast<float>() * state_scale;
+
+  // TODO: No scaling for linear costs
+  acado_Wlx_ = Wlx_.replicate(1, kSamples+1).template cast<float>();
+  acado_Wlu_ = Wlu_.replicate(1, kSamples).template cast<float>();
 
   return true;
 }

@@ -52,7 +52,8 @@ class MpcParams {
     p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
     q_B_C_(Eigen::Quaternion<T>(1.0, 0.0, 0.0, 0.0)),
     Q_(Eigen::Matrix<T, kCostSize, kCostSize>::Zero()),
-    R_(Eigen::Matrix<T, kInputSize, kInputSize>::Zero())
+    R_(Eigen::Matrix<T, kInputSize, kInputSize>::Zero()),
+    R_lin_(Eigen::Matrix<T, kInputSize, 1>::Zero())
   {
   }
 
@@ -71,7 +72,7 @@ class MpcParams {
       return false
 
     // Read state costs.
-    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o;
+    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_diff_angle;
     GET_PARAM(Q_pos_xy);
     GET_PARAM(Q_pos_z);
     GET_PARAM(Q_attitude);
@@ -80,6 +81,7 @@ class MpcParams {
     quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_l", Q_dist_l, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_o", Q_dist_o, (T)0.0, pnh);
+    GET_PARAM(Q_diff_angle);
     T Q_dummy = 0.0;
 
     // Check whether all state costs are positive.
@@ -90,28 +92,31 @@ class MpcParams {
        Q_perc_angle       < 0.0 ||    // Perception cost can be zero to deactivate.
        Q_perc_radius      < 0.0 || 
        Q_dist_l           < 0.0 || 
-       Q_dist_o           < 0.0 )      
+       Q_dist_o           < 0.0 ||
+       Q_diff_angle       < 0.0)      
     {
-      ROS_ERROR("MPC: State cost Q has negative enries!");
+      ROS_ERROR("MPC: State cost Q has negative entries!");
       return false;
     }
 
     // Read input costs.
-    T R_thrust, R_pitchroll, R_yaw, R_alpha, R_slack;
+    T R_thrust, R_pitchroll, R_yaw, R_alpha, R_slack, R_alpha_lin;
     GET_PARAM(R_thrust);
     GET_PARAM(R_pitchroll);
     GET_PARAM(R_yaw);
     GET_PARAM(R_alpha);
     GET_PARAM(R_slack);
+    GET_PARAM(R_alpha_lin);
 
     // Check whether all input costs are positive.
     if(R_thrust    <= 0.0 ||
        R_pitchroll <= 0.0 ||
        R_yaw       <= 0.0 ||
        R_alpha     < 0.0 ||
-       R_slack     < 0.0)
+       R_slack     < 0.0 ||
+       R_alpha_lin < 0.0)
     {
-      ROS_ERROR("MPC: Input cost R has negative enries!");
+      ROS_ERROR("MPC: Input cost R has negative entries!");
       return false;
     }
 
@@ -121,10 +126,10 @@ class MpcParams {
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
       Q_dummy, Q_dummy, 
-      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, 10).finished().asDiagonal();
+      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_diff_angle).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha, R_slack).finished().asDiagonal();
-
+    R_lin_ = (Eigen::Matrix<T, kInputSize, 1>() << 0, 0, 0, 0, R_alpha_lin, 0).finished();
     // Read cost scaling values
     quadrotor_common::getParam("state_cost_exponential",
       state_cost_exponential_, (T)0.0, pnh);
@@ -209,6 +214,7 @@ class MpcParams {
 
   Eigen::Matrix<T, kCostSize, kCostSize> Q_;
   Eigen::Matrix<T, kInputSize, kInputSize> R_;
+  Eigen::Matrix<T, kInputSize, 1> R_lin_;
 };
 
 
