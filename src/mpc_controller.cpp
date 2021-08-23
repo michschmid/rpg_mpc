@@ -503,7 +503,7 @@ void MpcController<T>::preparationThread() {
 
 template<typename T>
 bool MpcController<T>::setNewParams(MpcParams<T>& params) {
-  mpc_wrapper_.setCosts(params.Q_, params.R_);
+  mpc_wrapper_.setCosts(params.Q_, params.R_, params.R_lin_);
   mpc_wrapper_.setLimits(
       params.min_thrust_, params.max_thrust_,
       params.max_bodyrate_xy_, params.max_bodyrate_z_, 
