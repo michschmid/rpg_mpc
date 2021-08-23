@@ -29,7 +29,7 @@ Q_perc_angle:   400
 Q_perc_radius:  200 
 Q_dist_l:       50
 Q_dist_o:       600
-Q_diff_angle:   10    # Cost for difference in line heading and quad angle
+Q_diff_angle:   200    # Cost for difference in line heading and quad angle
 
 # Cost on Inputs
 R_thrust:     1     # Cost on thrust input
