@@ -72,7 +72,7 @@ class MpcParams {
       return false
 
     // Read state costs.
-    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_diff_angle;
+    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_point_projection;
     GET_PARAM(Q_pos_xy);
     GET_PARAM(Q_pos_z);
     GET_PARAM(Q_attitude);
@@ -81,7 +81,7 @@ class MpcParams {
     quadrotor_common::getParam("Q_perc_radius", Q_perc_radius, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_l", Q_dist_l, (T)0.0, pnh);
     quadrotor_common::getParam("Q_dist_o", Q_dist_o, (T)0.0, pnh);
-    GET_PARAM(Q_diff_angle);
+    GET_PARAM(Q_point_projection);
     T Q_dummy = 0.0;
 
     // Check whether all state costs are positive.
@@ -93,7 +93,7 @@ class MpcParams {
        Q_perc_radius      < 0.0 || 
        Q_dist_l           < 0.0 || 
        Q_dist_o           < 0.0 ||
-       Q_diff_angle       < 0.0)      
+       Q_point_projection < 0.0)      
     {
       ROS_ERROR("MPC: State cost Q has negative entries!");
       return false;
@@ -126,7 +126,7 @@ class MpcParams {
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
       Q_velocity, Q_velocity, Q_velocity,
       Q_dummy, Q_dummy, 
-      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_diff_angle).finished().asDiagonal();
+      Q_perc_angle, Q_perc_radius, Q_dist_l, Q_dist_o, Q_point_projection).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw, R_alpha, R_slack).finished().asDiagonal();
     R_lin_ = (Eigen::Matrix<T, kInputSize, 1>() << 0, 0, 0, 0, R_alpha_lin, 0).finished();
