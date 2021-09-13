@@ -59,9 +59,12 @@ MpcWrapper<T>::MpcWrapper()
   // Point of interest
   acado_reference_states_.block(kStateSize, 0, 2, kSamples) =
     Eigen::Matrix<float, 2, kSamples>::Zero();
-  // Distance 
+  // Distance to powerline
   acado_reference_states_.block(kStateSize+2, 0, 1, kSamples) =
     (Eigen::Matrix<float, 1, 1>() << 1).finished().replicate(1, kSamples);
+  // Distance to obstacle, distance to closest point
+  //acado_reference_states_.block(kStateSize+3, 0, 2, kSamples) =
+  //  Eigen::Matrix<float, 2, kSamples>::Zero();
 
   acado_reference_states_.block(kCostSize, 0, kInputSize, kSamples) =
     kHoverInput_.replicate(1, kSamples);
@@ -78,7 +81,7 @@ MpcWrapper<T>::MpcWrapper()
     acado_W_ = W_.replicate(1, kSamples).template cast<float>();
     acado_W_end_ = WN_.template cast<float>();
 
-    // TODO:
+    // Linear cost matrices
     acado_Wlx_ = Wlx_.replicate(1, kSamples+1).template cast<float>();
     acado_Wlu_ = Wlu_.replicate(1, kSamples).template cast<float>();
   }

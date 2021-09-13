@@ -36,7 +36,7 @@ R_thrust:     1     # Cost on thrust input
 R_pitchroll:  1     # Cost on pitch and roll rate
 R_yaw:        1     # Cost on yaw rate
 
-# Cost on slack variables, TODO
+# Cost on slack variables
 R_alpha:    0.5     # Quadratic cost for alpha
 R_alpha_lin:  15      # Linear cost for alpha
 R_slack:    1000
